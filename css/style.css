@@ -26,16 +26,55 @@ html { scroll-behavior: smooth; }
 body {
   font-family: var(--sans);
   font-weight: 300;
-  background-color: var(--bg);
+  background-color: #020203;
+  /* layered memorial background */
   /* พื้นเรียบ มีเพียงแสงเรืองจาง ๆ ด้านบน (ลายไทยอยู่เฉพาะส่วนหัว/ท้าย) */
   background-image:
-    radial-gradient(1400px 700px at 50% -12%, rgba(32,32,36,0.85) 0%, transparent 62%);
+    radial-gradient(920px 620px at 50% 7%, rgba(112,112,116,0.42) 0%, rgba(54,54,58,0.34) 32%, rgba(10,10,12,0.70) 68%, rgba(0,0,0,0.96) 100%),
+    linear-gradient(90deg, rgba(0,0,0,0.88) 0%, rgba(5,5,6,0.22) 28%, rgba(255,255,255,0.035) 50%, rgba(5,5,6,0.22) 72%, rgba(0,0,0,0.88) 100%),
+    linear-gradient(180deg, #030304 0%, #171719 27%, #080809 61%, #010102 100%);
+  background-attachment: fixed;
   color: var(--ink);
   min-height: 100vh;
   line-height: 1.7;
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
 }
 
 body.modal-open { overflow: hidden; }
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::before {
+  background-image:
+    linear-gradient(135deg, transparent 0%, transparent 47%, rgba(255,255,255,0.07) 47.6%, transparent 48.3%, transparent 100%),
+    linear-gradient(45deg, transparent 0%, transparent 47%, rgba(255,255,255,0.06) 47.6%, transparent 48.3%, transparent 100%),
+    var(--thai-pattern);
+  background-size: 118px 118px, 118px 118px, 118px 118px;
+  background-position: center top;
+  opacity: 0.2;
+}
+
+body::after {
+  background-image:
+    radial-gradient(580px 280px at 50% 0%, rgba(255,255,255,0.16) 0%, transparent 68%),
+    radial-gradient(760px 560px at 50% 38%, rgba(255,255,255,0.07) 0%, transparent 70%),
+    linear-gradient(90deg, rgba(0,0,0,0.9) 0%, transparent 22%, transparent 78%, rgba(0,0,0,0.9) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.58) 0%, transparent 26%, rgba(0,0,0,0.32) 72%, rgba(0,0,0,0.84) 100%);
+}
+
+body > :not(script) {
+  position: relative;
+  z-index: 1;
+}
 
 /* ---------- พระฉายาลักษณ์ ---------- */
 .portrait-frame {
@@ -109,9 +148,10 @@ body.modal-open { overflow: hidden; }
   border-bottom: 1px solid var(--line);
   /* ลายไทยขนาดเล็กถี่ (ย่อเหลือ 84px) ใต้ม่านไล่เงาบาง ๆ ให้ลายจางลงเมื่อใกล้เนื้อหา */
   background-image:
-    linear-gradient(180deg, rgba(6,6,7,0.1) 0%, rgba(6,6,7,0.55) 100%),
+    radial-gradient(760px 360px at 50% 0%, rgba(255,255,255,0.11) 0%, transparent 70%),
+    linear-gradient(180deg, rgba(7,7,8,0.26) 0%, rgba(6,6,7,0.76) 100%),
     var(--thai-pattern);
-  background-size: auto, 84px 84px;
+  background-size: auto, auto, 94px 94px;
 }
 
 .masthead-lead {
@@ -120,6 +160,7 @@ body.modal-open { overflow: hidden; }
   letter-spacing: 0.35em;
   text-indent: 0.35em;
   color: var(--ink-dim);
+  overflow-wrap: anywhere;
 }
 
 .royal-name {
@@ -128,15 +169,28 @@ body.modal-open { overflow: hidden; }
   font-size: clamp(1.4rem, 2.6vw, 2.1rem);
   line-height: 1.8;
   margin-top: 28px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 920px;
   color: var(--ink);
   text-wrap: balance;
+  overflow-wrap: anywhere;
+  line-break: anywhere;
+}
+.royal-name span {
+  display: inline-block;
 }
 
 .masthead-sub {
   margin-top: 18px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 780px;
   font-size: 1rem;
   color: var(--ink-faint);
   letter-spacing: 0.06em;
+  overflow-wrap: anywhere;
+  line-break: anywhere;
 }
 
 /* ---------- เส้นแบ่งประดับ ---------- */
@@ -200,9 +254,12 @@ body.modal-open { overflow: hidden; }
 .entry {
   border: 1px solid var(--panel-edge);
   border-top: 2px solid var(--line);
-  background: rgba(21,21,23,0.88);
+  background: linear-gradient(180deg, rgba(25,25,27,0.88) 0%, rgba(13,13,15,0.93) 100%);
   border-radius: 3px;
   padding: 26px 28px 22px;
+  box-shadow:
+    0 18px 44px rgba(0,0,0,0.34),
+    inset 0 1px 0 rgba(255,255,255,0.035);
 }
 
 .entry-phrase {
@@ -475,9 +532,9 @@ body.modal-open { overflow: hidden; }
   color: var(--ink-dim);
   font-size: 1rem;
   background-image:
-    linear-gradient(180deg, rgba(6,6,7,0.55) 0%, rgba(6,6,7,0.1) 100%),
+    linear-gradient(180deg, rgba(6,6,7,0.78) 0%, rgba(4,4,5,0.28) 100%),
     var(--thai-pattern);
-  background-size: auto, 84px 84px;
+  background-size: auto, 94px 94px;
 }
 .site-footer .divider { margin: 0 auto 24px; max-width: 360px; }
 .footer-sub {
@@ -489,7 +546,32 @@ body.modal-open { overflow: hidden; }
 
 /* ---------- จอเล็ก ---------- */
 @media (max-width: 640px) {
-  .masthead { padding-top: 56px; }
+  .masthead {
+    padding-top: 56px;
+    padding-left: 16px;
+    padding-right: 16px;
+    overflow: hidden;
+  }
+  .masthead-lead {
+    font-size: 0.95rem;
+    letter-spacing: 0.22em;
+    text-indent: 0.22em;
+  }
+  .royal-name {
+    font-size: clamp(0.98rem, 4.2vw, 1.14rem);
+    line-height: 1.7;
+    text-wrap: wrap;
+    word-break: break-all;
+  }
+  .royal-name span {
+    display: block;
+  }
+  .masthead-sub {
+    font-size: 0.85rem;
+    line-height: 1.65;
+    letter-spacing: 0.02em;
+    word-break: break-all;
+  }
   .phrase-list { grid-template-columns: 1fr; }
   .sign-open-btn { width: 100%; justify-content: center; }
 }
