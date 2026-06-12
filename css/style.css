@@ -1,0 +1,495 @@
+/* ============================================================
+   ถวายความอาลัย — โทนขาวดำ สง่า สุภาพ เรียบง่าย
+   พื้นหลังลายไทย "ประจำยาม" จาง ๆ
+   ============================================================ */
+
+:root {
+  --bg:          #060607;
+  --bg-soft:     #101012;
+  --panel:       #131315;
+  --panel-edge:  #28282b;
+  --ink:         #f1efe9;       /* ขาวงาช้างอ่อน อ่านสบายกว่าขาวจัด */
+  --ink-dim:     #b5b0a6;
+  --ink-faint:   #807c74;
+  --line:        #343437;
+  --accent:      #cdc6b8;       /* เงินอมงาช้าง ดูขรึมสมการไว้อาลัย */
+  --serif: "Trirong", "Noto Serif Thai", serif;
+  --sans:  "Sarabun", "Noto Sans Thai", sans-serif;
+  /* ลายประจำยามก้านแย่ง — ใช้เฉพาะส่วนหัวและส่วนท้าย ย่อขนาดด้วย background-size */
+  --thai-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cdefs%3E%3Cg id='m'%3E%3Cpath d='M0 0 C-8 -7, -9 -20, 0 -30 C9 -20, 8 -7, 0 0 Z'/%3E%3Cpath d='M0 0 C-8 7, -9 20, 0 30 C9 20, 8 7, 0 0 Z'/%3E%3Cpath d='M0 0 C-7 -8, -20 -9, -30 0 C-20 9, -7 8, 0 0 Z'/%3E%3Cpath d='M0 0 C7 -8, 20 -9, 30 0 C20 9, 7 8, 0 0 Z'/%3E%3Cpath d='M0 -5 C-4.5 -10, -5 -17, 0 -24 C5 -17, 4.5 -10, 0 -5 Z'/%3E%3Cpath d='M0 5 C-4.5 10, -5 17, 0 24 C5 17, 4.5 10, 0 5 Z'/%3E%3Cpath d='M-5 0 C-10 -4.5, -17 -5, -24 0 C-17 5, -10 4.5, -5 0 Z'/%3E%3Cpath d='M5 0 C10 -4.5, 17 -5, 24 0 C17 5, 10 4.5, 5 0 Z'/%3E%3Ccircle cx='0' cy='0' r='2.6'/%3E%3Cpath d='M9 -9 C14 -16, 21 -19, 28 -20 C22 -14, 16 -10, 9 -9 Z'/%3E%3Cpath d='M9 9 C14 16, 21 19, 28 20 C22 14, 16 10, 9 9 Z'/%3E%3Cpath d='M-9 -9 C-14 -16, -21 -19, -28 -20 C-22 -14, -16 -10, -9 -9 Z'/%3E%3Cpath d='M-9 9 C-14 16, -21 19, -28 20 C-22 14, -16 10, -9 9 Z'/%3E%3C/g%3E%3C/defs%3E%3Cg stroke='%23ffffff' stroke-opacity='0.22' fill='%23ffffff' fill-opacity='0.12' stroke-width='0.8'%3E%3Cuse href='%23m' x='80' y='80'/%3E%3Cuse href='%23m' x='0' y='0'/%3E%3Cuse href='%23m' x='160' y='0'/%3E%3Cuse href='%23m' x='0' y='160'/%3E%3Cuse href='%23m' x='160' y='160'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.14'%3E%3Cpath d='M40 35 L44 40 L40 45 L36 40 Z'/%3E%3Cpath d='M120 35 L124 40 L120 45 L116 40 Z'/%3E%3Cpath d='M40 115 L44 120 L40 125 L36 120 Z'/%3E%3Cpath d='M120 115 L124 120 L120 125 L116 120 Z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  font-weight: 300;
+  background-color: var(--bg);
+  /* พื้นเรียบ มีเพียงแสงเรืองจาง ๆ ด้านบน (ลายไทยอยู่เฉพาะส่วนหัว/ท้าย) */
+  background-image:
+    radial-gradient(1400px 700px at 50% -12%, rgba(32,32,36,0.85) 0%, transparent 62%);
+  color: var(--ink);
+  min-height: 100vh;
+  line-height: 1.7;
+}
+
+body.modal-open { overflow: hidden; }
+
+/* ---------- พระฉายาลักษณ์ ---------- */
+.portrait-frame {
+  position: relative;
+  width: min(300px, 72vw);
+  margin: 36px auto 0;
+  padding: 12px;
+  background: #0d0d0e;
+  border: 1px solid #3b3a36;
+  box-shadow:
+    0 24px 60px rgba(0,0,0,0.55),
+    inset 0 0 0 1px rgba(255,255,255,0.045);
+}
+
+.portrait-inner {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border: 1px solid #2c2c2a;
+  background: #131314;
+}
+/* ข้อความสำรอง กรณียังไม่มีไฟล์รูป */
+.portrait-inner::after {
+  content: "พระฉายาลักษณ์";
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--serif);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  color: var(--ink-faint);
+  z-index: 0;
+}
+.portrait-inner img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: grayscale(1) contrast(1.04) brightness(0.95); /* ขาวดำสมการไว้อาลัย */
+}
+
+/* แถบริบบิ้นไว้ทุกข์ พาดมุมซ้ายบนของกรอบ */
+.portrait-ribbon {
+  position: absolute;
+  top: -6px; left: -6px;
+  width: 120px; height: 120px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 2;
+}
+.portrait-ribbon::before {
+  content: "";
+  position: absolute;
+  top: 26px; left: -42px;
+  width: 200px; height: 30px;
+  transform: rotate(-45deg);
+  background: linear-gradient(180deg, #29292c 0%, #0a0a0b 48%, #1c1c1f 100%);
+  border-top: 1px solid rgba(255,255,255,0.12);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.55);
+}
+
+/* ---------- ส่วนหัว ---------- */
+.masthead {
+  text-align: center;
+  padding: 72px 24px 48px;
+  border-bottom: 1px solid var(--line);
+  /* ลายไทยขนาดเล็กถี่ (ย่อเหลือ 84px) ใต้ม่านไล่เงาบาง ๆ ให้ลายจางลงเมื่อใกล้เนื้อหา */
+  background-image:
+    linear-gradient(180deg, rgba(6,6,7,0.1) 0%, rgba(6,6,7,0.55) 100%),
+    var(--thai-pattern);
+  background-size: auto, 84px 84px;
+}
+
+.masthead-lead {
+  font-family: var(--serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.35em;
+  text-indent: 0.35em;
+  color: var(--ink-dim);
+}
+
+.royal-name {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: clamp(1.4rem, 2.6vw, 2.1rem);
+  line-height: 1.8;
+  margin-top: 28px;
+  color: var(--ink);
+  text-wrap: balance;
+}
+
+.masthead-sub {
+  margin-top: 18px;
+  font-size: 1rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.06em;
+}
+
+/* ---------- เส้นแบ่งประดับ ---------- */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 26px auto 0;
+  max-width: 560px;
+}
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line) 30%, var(--line) 70%, transparent);
+}
+.divider-orn { width: 72px; height: 22px; flex: none; }
+
+/* ---------- โครงหน้า ---------- */
+.container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 48px 24px 140px;   /* เผื่อที่ให้ปุ่มลงนามลอยด้านล่าง */
+}
+
+.panel-title {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-size: 1.45rem;
+  text-align: center;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+
+.panel-hint {
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  margin-top: 6px;
+}
+
+/* ---------- สมุดลงนาม ---------- */
+.book-panel { text-align: center; }
+
+.book-count {
+  color: var(--ink-faint);
+  font-size: 0.95rem;
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+.entry-list {
+  list-style: none;
+  margin-top: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+}
+
+.entry {
+  border: 1px solid var(--panel-edge);
+  border-top: 2px solid var(--line);
+  background: rgba(21,21,23,0.88);
+  border-radius: 3px;
+  padding: 26px 28px 22px;
+}
+
+.entry-phrase {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  line-height: 1.95;
+  white-space: pre-line;
+  color: var(--ink);
+}
+
+.entry-name {
+  margin-top: 14px;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  color: var(--ink-dim);
+}
+.entry-name::before { content: "ข้าพระพุทธเจ้า  "; color: var(--ink-faint); }
+
+.entry-time {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: #6a6864;
+  letter-spacing: 0.05em;
+}
+
+/* รายการใหม่ค่อย ๆ ปรากฏ */
+.entry.entry-new {
+  animation: entryIn 0.9s ease both;
+  border-top-color: var(--accent);
+}
+@keyframes entryIn {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- แบ่งหน้า ---------- */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 34px;
+  flex-wrap: wrap;
+}
+
+.page-btn {
+  min-width: 38px;
+  padding: 7px 12px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+.page-btn:hover { border-color: var(--ink-dim); color: var(--ink); }
+.page-btn.active {
+  border-color: var(--accent);
+  color: #111;
+  background: var(--accent);
+  cursor: default;
+}
+.page-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ---------- ปุ่มลงนามลอยด้านล่าง ---------- */
+.sign-bar {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 18px 24px 22px;
+  background: linear-gradient(180deg, transparent 0%, rgba(8,8,9,0.92) 45%);
+  z-index: 20;
+  pointer-events: none;
+}
+
+.sign-open-btn {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 48px;
+  background: rgba(18,18,20,0.95);
+  border: 1px solid var(--accent);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  cursor: pointer;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  transition: background 0.3s, color 0.3s;
+}
+.sign-open-btn:hover { background: var(--accent); color: #111; }
+
+/* ---------- หน้าต่างลงนาม (Popup) ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4,4,5,0.78);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 30;
+  animation: overlayIn 0.25s ease both;
+}
+/* เมื่อมี attribute hidden ต้องซ่อนจริง ๆ (ชนะ display:flex ด้านบน) */
+.modal-overlay[hidden] { display: none; }
+@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--panel-edge);
+  border-top: 2px solid var(--accent);
+  border-radius: 4px;
+  padding: 36px clamp(20px, 4vw, 44px) 36px;
+  box-shadow: 0 24px 70px rgba(0,0,0,0.7);
+  animation: modalIn 0.3s ease both;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.modal-close {
+  position: absolute;
+  top: 10px; right: 14px;
+  background: none;
+  border: none;
+  color: var(--ink-faint);
+  font-size: 1.9rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.modal-close:hover { color: var(--ink); }
+
+/* ---------- ตัวเลือกถ้อยคำ (กระชับ ๒ คอลัมน์) ---------- */
+.phrase-list {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.phrase-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 10px 14px 10px 38px;
+  cursor: pointer;
+  transition: border-color 0.25s, background 0.25s;
+  background: var(--bg-soft);
+  user-select: none;
+}
+.phrase-item:hover { border-color: var(--ink-faint); }
+
+.phrase-item input { position: absolute; opacity: 0; pointer-events: none; }
+
+.phrase-item .mark {
+  position: absolute;
+  left: 13px; top: 50%;
+  transform: translateY(-50%);
+  width: 14px; height: 14px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 50%;
+  transition: border-color 0.25s;
+}
+.phrase-item .mark::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: scale(0);
+  transition: transform 0.2s ease;
+}
+
+.phrase-item.selected {
+  border-color: var(--accent);
+  background: #1d1d20;
+}
+.phrase-item.selected .mark { border-color: var(--accent); }
+.phrase-item.selected .mark::after { transform: scale(1); }
+
+.phrase-text {
+  font-family: var(--serif);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--ink);
+}
+
+/* ---------- ช่องชื่อ (เน้นให้เด่น) ---------- */
+.name-block {
+  margin-top: 26px;
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  background: #1a1a1d;
+  padding: 14px 18px 16px;
+  box-shadow: 0 0 0 1px rgba(217,214,208,0.12), inset 0 1px 8px rgba(0,0,0,0.4);
+}
+
+.name-label {
+  display: block;
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  font-weight: 500;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.name-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--ink-faint);
+  outline: none;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.2rem;
+  letter-spacing: 0.02em;
+  padding: 6px 2px 8px;
+  transition: border-color 0.25s;
+}
+.name-input:focus { border-bottom-color: var(--accent); border-bottom-style: solid; }
+.name-input::placeholder { color: #6b6964; font-family: var(--sans); font-size: 0.98rem; }
+
+.form-error {
+  min-height: 1.4em;
+  margin-top: 12px;
+  text-align: center;
+  color: #c9a8a8;
+  font-size: 0.92rem;
+}
+
+.submit-btn {
+  display: block;
+  margin: 6px auto 0;
+  padding: 13px 52px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #111;
+  font-family: var(--serif);
+  font-size: 1.08rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s;
+}
+.submit-btn:hover { background: transparent; color: var(--ink); }
+.submit-btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ---------- ส่วนท้าย ---------- */
+.site-footer {
+  border-top: 1px solid var(--line);
+  text-align: center;
+  padding: 36px 24px 110px;   /* เผื่อปุ่มลอยด้านล่าง */
+  color: var(--ink-dim);
+  font-size: 1rem;
+  background-image:
+    linear-gradient(180deg, rgba(6,6,7,0.55) 0%, rgba(6,6,7,0.1) 100%),
+    var(--thai-pattern);
+  background-size: auto, 84px 84px;
+}
+.site-footer .divider { margin: 0 auto 24px; max-width: 360px; }
+.footer-sub {
+  margin-top: 4px;
+  font-size: 0.82rem;
+  color: var(--ink-faint);
+  letter-spacing: 0.08em;
+}
+
+/* ---------- จอเล็ก ---------- */
+@media (max-width: 640px) {
+  .masthead { padding-top: 56px; }
+  .phrase-list { grid-template-columns: 1fr; }
+  .sign-open-btn { width: 100%; justify-content: center; }
+}
