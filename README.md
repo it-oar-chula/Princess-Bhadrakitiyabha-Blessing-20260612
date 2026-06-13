@@ -29,14 +29,12 @@ data/             ไฟล์ฐานข้อมูล SQLite
 ตาราง `signatures` เก็บข้อมูลหลักเหล่านี้:
 
 ```text
-id
-created_at_ms
-submitted_at
-name
-phrase_index
-phrase
-status
-note
+id              เลขรันอัตโนมัติ 1, 2, 3, ...
+created_at_ms   เวลาที่ลงนาม (Unix ms, ใช้ภายใน)
+submitted_at    เวลาที่ลงนาม (อ่านได้)
+name            ชื่อผู้ลงนาม
+phrase_index    หมายเลขถ้อยคำ 0-7
+phrase          ข้อความถ้อยคำเต็ม
 ```
 
 ## วิธีรันด้วย Docker
@@ -52,7 +50,7 @@ docker compose up --build
 4. เปิดเว็บที่
 
 ```text
-http://161.200.145.18:8000
+http://<server-ip>:<port>
 ```
 
 ## หน้าผู้ดูแล
@@ -60,7 +58,7 @@ http://161.200.145.18:8000
 เปิด:
 
 ```text
-http://161.200.145.18:8000/admin
+http://<server-ip>:<port>/admin
 ```
 
 ใส่รหัส `ADMIN_CODE` แล้วกดดาวน์โหลดได้ทันที
