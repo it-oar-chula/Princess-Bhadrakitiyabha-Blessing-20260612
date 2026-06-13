@@ -85,6 +85,10 @@ class SignatureUpdate(BaseModel):
     phrase_index: Optional[int] = Field(default=None, ge=0, le=len(PHRASES) - 1)
 
 
+class BulkDelete(BaseModel):
+    ids: list[int] = Field(default_factory=list)
+
+
 def now_bangkok() -> datetime:
     return datetime.now(BANGKOK_TZ)
 
@@ -425,6 +429,27 @@ def admin_delete_signature(entry_id: int, code: str = Query(default="")) -> dict
     return {"ok": True}
 
 
+@app.get("/api/admin/verify")
+def admin_verify(code: str = Query(default="")) -> dict:
+    require_admin(code)
+    return {"ok": True}
+
+
+@app.post("/api/admin/signatures/bulk-delete")
+def admin_bulk_delete(payload: BulkDelete, code: str = Query(default="")) -> dict:
+    require_admin(code)
+    ids = [int(i) for i in payload.ids]
+    if not ids:
+        raise HTTPException(status_code=400, detail="no ids provided")
+    placeholders = ",".join("?" for _ in ids)
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"DELETE FROM signatures WHERE id IN ({placeholders})", ids
+        )
+        conn.commit()
+    return {"ok": True, "deleted": cursor.rowcount}
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page() -> str:
     phrases_json = json.dumps([p.replace("\n", " ") for p in PHRASES], ensure_ascii=False)
@@ -456,9 +481,9 @@ def admin_page() -> str:
               color: var(--ink);
             }}
             main {{
-              max-width: 760px;
+              max-width: 1200px;
               margin: 0 auto;
-              padding: 32px 20px 48px;
+              padding: 32px 24px 56px;
             }}
             h1 {{
               margin: 0 0 8px;
@@ -523,6 +548,7 @@ def admin_page() -> str:
               color: var(--muted);
             }}
             h2 {{ margin: 0 0 6px; font-size: 1.2rem; font-weight: 600; }}
+            input[type="checkbox"] {{ width: auto; padding: 0; cursor: pointer; }}
             select {{
               padding: 10px 12px;
               border: 1px solid var(--line);
@@ -532,6 +558,11 @@ def admin_page() -> str:
               font: inherit;
               max-width: 100%;
             }}
+            .login-card {{ max-width: 460px; margin: 48px auto 0; }}
+            #adminContent[hidden] {{ display: none; }}
+            .topbar {{ display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 6px; }}
+            .toolbar {{ display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 16px; }}
+            .toolbar .search {{ flex: 1; min-width: 260px; }}
             .addbox {{
               display: grid;
               grid-template-columns: 1fr 1.3fr auto;
@@ -543,159 +574,162 @@ def admin_page() -> str:
             table {{ width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.92rem; table-layout: fixed; }}
             th, td {{ padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }}
             th {{ color: var(--accent); font-weight: 600; }}
-            th:nth-child(1), td:nth-child(1) {{ width: 38px; }}
-            th:nth-child(2), td:nth-child(2) {{ width: 30%; }}
-            th:nth-child(4), td:nth-child(4) {{ width: 110px; white-space: nowrap; color: var(--muted); font-size: 0.82rem; }}
-            th:nth-child(5), td:nth-child(5) {{ width: 150px; }}
+            th.cb, td.cb {{ width: 36px; text-align: center; }}
+            th:nth-child(2), td:nth-child(2) {{ width: 46px; }}
+            th:nth-child(3), td:nth-child(3) {{ width: 28%; }}
+            th:nth-child(5), td:nth-child(5) {{ width: 150px; color: var(--muted); font-size: 0.82rem; }}
+            th:nth-child(6), td:nth-child(6) {{ width: 150px; }}
             td input.cell-name {{ width: 100%; padding: 8px 10px; }}
             td select {{ width: 100%; }}
             td.actions {{ white-space: nowrap; }}
             td.actions button {{ padding: 7px 12px; font-size: 0.85rem; }}
             button.danger {{ background: #7c2d2d; border-color: #7c2d2d; color: #fbeaea; }}
             .muted-id {{ color: var(--muted); }}
-            @media (max-width: 640px) {{
-              .addbox {{ grid-template-columns: 1fr; }}
-              table, thead, tbody, th, td, tr {{ display: block; }}
-              th {{ display: none; }}
-              td {{ width: auto !important; border: 0; padding: 4px 0; }}
-              tr {{ border-bottom: 1px solid var(--line); padding: 10px 0; }}
-            }}
           </style>
         </head>
         <body>
           <main>
             <h1>{APP_TITLE}</h1>
-            <p>หน้าผู้ดูแลสำหรับโหลด CSV/XLSX และดูสรุปข้อมูลจาก SQLite</p>
 
-            <section class="panel">
-              <label for="adminCode">Admin code</label>
-              <input id="adminCode" type="password" autocomplete="off" placeholder="ใส่รหัสผู้ดูแล">
-
+            <section class="panel login-card" id="loginCard">
+              <label for="loginCode">Admin password</label>
+              <input id="loginCode" type="password" autocomplete="current-password" placeholder="ใส่รหัสผ่านผู้ดูแล">
               <div class="row">
-                <button type="button" id="downloadCsv">Download CSV</button>
-                <button type="button" id="downloadXlsx">Download XLSX</button>
-                <button type="button" class="secondary" id="loadSummary">Load Summary</button>
+                <button type="button" id="loginBtn">เข้าสู่ระบบ</button>
               </div>
-
-              <pre id="status">พร้อมใช้งาน</pre>
-              <small>หน้านี้ไม่ถูกลิงก์จากหน้าแรกของเว็บ</small>
+              <small id="loginError" style="color:#e0a0a0; min-height:1.2em;"></small>
             </section>
 
-            <section class="panel">
-              <h2>จัดการรายชื่อ (เพิ่ม / แก้ไข / ลบ)</h2>
-              <p>ใส่ Admin code ด้านบนก่อน แล้วกด "โหลดรายชื่อทั้งหมด"</p>
-
-              <div class="addbox">
-                <input id="newName" type="text" maxlength="120" placeholder="ชื่อผู้ลงนาม">
-                <select id="newPhrase"></select>
-                <button type="button" id="addBtn">+ เพิ่มรายชื่อ</button>
+            <div id="adminContent" hidden>
+              <div class="topbar">
+                <p>หน้าผู้ดูแล — โหลด CSV/XLSX, ดูสรุป และจัดการรายชื่อ</p>
+                <button type="button" class="secondary" id="logoutBtn">ออกจากระบบ</button>
               </div>
 
-              <div class="row">
-                <button type="button" class="secondary" id="loadEntries">โหลดรายชื่อทั้งหมด</button>
-                <span id="mgrStatus" style="align-self:center; color:var(--muted);"></span>
-              </div>
+              <section class="panel">
+                <div class="row">
+                  <button type="button" id="downloadCsv">Download CSV</button>
+                  <button type="button" id="downloadXlsx">Download XLSX</button>
+                  <button type="button" class="secondary" id="loadSummary">Load Summary</button>
+                </div>
+                <pre id="status">พร้อมใช้งาน</pre>
+              </section>
 
-              <div id="tableWrap"></div>
-            </section>
+              <section class="panel">
+                <h2>จัดการรายชื่อ (เพิ่ม / แก้ไข / ลบ)</h2>
+
+                <div class="addbox">
+                  <input id="newName" type="text" maxlength="120" placeholder="ชื่อผู้ลงนาม">
+                  <select id="newPhrase"></select>
+                  <button type="button" id="addBtn">+ เพิ่มรายชื่อ</button>
+                </div>
+
+                <div class="toolbar">
+                  <button type="button" class="secondary" id="loadEntries">โหลดรายชื่อทั้งหมด</button>
+                  <input class="search" id="searchInput" type="text" placeholder="ค้นหาจากชื่อ หรือ วันที่...">
+                  <button type="button" class="danger" id="bulkDeleteBtn">ลบที่เลือก (0)</button>
+                  <span id="mgrStatus" style="color:var(--muted);"></span>
+                </div>
+
+                <div id="tableWrap"></div>
+              </section>
+            </div>
           </main>
 
           <script>
-            const codeInput = document.getElementById('adminCode');
             const statusEl = document.getElementById('status');
             const storageKey = 'blessing-admin-code';
-            codeInput.value = localStorage.getItem(storageKey) || '';
+            let adminCode = '';
+            let allEntries = [];
 
-            function getCode() {{
-              return codeInput.value.trim() || localStorage.getItem(storageKey) || '';
+            const PHRASES = {phrases_json};
+
+            function getCode() {{ return adminCode; }}
+            function setMgr(m) {{ document.getElementById('mgrStatus').textContent = m; }}
+            function fmtTime(ms) {{
+              try {{ return new Date(ms).toLocaleString('th-TH'); }} catch (e) {{ return ''; }}
             }}
 
-            function requireCode() {{
-              const code = getCode();
-              if (!code) {{
-                statusEl.textContent = 'กรุณาใส่รหัส admin';
-                throw new Error('missing code');
-              }}
-              localStorage.setItem(storageKey, code);
-              return code;
+            // ---------- login gate ----------
+            async function doLogin(silent) {{
+              const errEl = document.getElementById('loginError');
+              const code = document.getElementById('loginCode').value.trim();
+              errEl.textContent = '';
+              if (!code) {{ if (!silent) errEl.textContent = 'กรุณาใส่รหัสผ่าน'; return; }}
+              try {{
+                const res = await fetch('/api/admin/verify?code=' + encodeURIComponent(code));
+                if (!res.ok) {{
+                  errEl.textContent = res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'เข้าสู่ระบบไม่สำเร็จ';
+                  return;
+                }}
+                adminCode = code;
+                localStorage.setItem(storageKey, code);
+                document.getElementById('loginCard').hidden = true;
+                document.getElementById('adminContent').hidden = false;
+                loadEntries();
+              }} catch (e) {{ if (!silent) errEl.textContent = 'เกิดข้อผิดพลาด'; }}
             }}
 
+            function logout() {{
+              adminCode = '';
+              localStorage.removeItem(storageKey);
+              document.getElementById('adminContent').hidden = true;
+              document.getElementById('loginCard').hidden = false;
+              document.getElementById('loginCode').value = '';
+            }}
+
+            // ---------- download / summary ----------
             async function download(path, filename) {{
-              let code;
-              try {{ code = requireCode(); }} catch (e) {{ return; }}
+              const code = getCode();
               statusEl.textContent = 'กำลังดาวน์โหลด...';
               try {{
-                const res = await fetch(`${{path}}?code=${{encodeURIComponent(code)}}`);
+                const res = await fetch(path + '?code=' + encodeURIComponent(code));
                 if (!res.ok) {{
-                  if (res.status === 401) {{
-                    statusEl.textContent = 'รหัสผ่านไม่ถูกต้อง';
-                    return;
-                  }}
-                  let detail = 'ดาวน์โหลดไม่สำเร็จ';
-                  try {{ const d = await res.json(); detail = d.detail || detail; }} catch (_e) {{}}
-                  statusEl.textContent = detail;
+                  if (res.status === 401) {{ statusEl.textContent = 'รหัสผ่านไม่ถูกต้อง'; logout(); return; }}
+                  statusEl.textContent = 'ดาวน์โหลดไม่สำเร็จ';
                   return;
                 }}
                 const blob = await res.blob();
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
-                a.href = url;
-                a.download = filename;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
+                a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click(); a.remove();
                 URL.revokeObjectURL(url);
                 statusEl.textContent = 'ดาวน์โหลดสำเร็จ: ' + filename;
-              }} catch (error) {{
-                statusEl.textContent = error.message || 'เกิดข้อผิดพลาด';
-              }}
+              }} catch (error) {{ statusEl.textContent = 'เกิดข้อผิดพลาด'; }}
             }}
 
-            document.getElementById('downloadCsv').addEventListener('click', () => download('/api/admin/export.csv', '{EXPORT_BASENAME}.csv'));
-            document.getElementById('downloadXlsx').addEventListener('click', () => download('/api/admin/export.xlsx', '{EXPORT_BASENAME}.xlsx'));
-            document.getElementById('loadSummary').addEventListener('click', async () => {{
-              let code;
-              try {{ code = requireCode(); }} catch (e) {{ return; }}
-              statusEl.textContent = 'กำลังโหลดสรุป...';
-              try {{
-                const res = await fetch(`/api/admin/summary?code=${{encodeURIComponent(code)}}`);
-                const data = await res.json().catch(() => ({{}}));
-                if (!res.ok) {{
-                  statusEl.textContent = res.status === 401
-                    ? 'รหัสผ่านไม่ถูกต้อง'
-                    : (data.detail || 'โหลดสรุปไม่สำเร็จ');
-                  return;
-                }}
-                statusEl.textContent = JSON.stringify(data, null, 2);
-              }} catch (error) {{
-                statusEl.textContent = error.message || 'เกิดข้อผิดพลาด';
-              }}
-            }});
-
-            // ===== จัดการรายชื่อ (เพิ่ม / แก้ไข / ลบ) =====
-            const PHRASES = {phrases_json};
-
-            function setMgr(m) {{ document.getElementById('mgrStatus').textContent = m; }}
-
-            function fmtTime(ms) {{
-              try {{ return new Date(ms).toLocaleString('th-TH'); }} catch (e) {{ return ''; }}
-            }}
-
+            // ---------- table render ----------
             function phraseOptionsHtml(selected) {{
               return PHRASES.map(function (p, i) {{
                 return '<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + (i + 1) + '. ' + p + '</option>';
               }}).join('');
             }}
 
+            function updateBulkCount() {{
+              const n = document.querySelectorAll('#tableWrap .rowcb:checked').length;
+              document.getElementById('bulkDeleteBtn').textContent = 'ลบที่เลือก (' + n + ')';
+            }}
+
             function renderTable(entries) {{
               const wrap = document.getElementById('tableWrap');
               wrap.innerHTML = '';
-              if (!entries.length) {{ wrap.innerHTML = '<p>ยังไม่มีรายชื่อ</p>'; return; }}
+              if (!entries.length) {{ wrap.innerHTML = '<p>ไม่พบรายชื่อ</p>'; updateBulkCount(); return; }}
               const table = document.createElement('table');
-              table.innerHTML = '<thead><tr><th>#</th><th>ชื่อ</th><th>ถ้อยคำ</th><th>เวลา</th><th></th></tr></thead>';
+              table.innerHTML = '<thead><tr><th class="cb"><input type="checkbox" id="selectAll"></th><th>#</th><th>ชื่อ</th><th>ถ้อยคำ</th><th>เวลา</th><th></th></tr></thead>';
               const tbody = document.createElement('tbody');
               entries.forEach(function (e) {{
                 const tr = document.createElement('tr');
+
+                const tdCb = document.createElement('td');
+                tdCb.className = 'cb';
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'rowcb';
+                cb.setAttribute('data-id', e.id);
+                cb.addEventListener('change', updateBulkCount);
+                tdCb.appendChild(cb);
+                tr.appendChild(tdCb);
 
                 const tdId = document.createElement('td');
                 tdId.className = 'muted-id';
@@ -729,7 +763,7 @@ def admin_page() -> str:
                 delBtn.className = 'danger';
                 delBtn.textContent = 'ลบ';
                 delBtn.style.marginLeft = '6px';
-                delBtn.addEventListener('click', function () {{ deleteEntry(e.id, e.name, tr); }});
+                delBtn.addEventListener('click', function () {{ deleteEntry(e.id, e.name); }});
                 tdAct.appendChild(saveBtn);
                 tdAct.appendChild(delBtn);
                 tr.appendChild(tdAct);
@@ -738,25 +772,43 @@ def admin_page() -> str:
               }});
               table.appendChild(tbody);
               wrap.appendChild(table);
+
+              const selAll = document.getElementById('selectAll');
+              selAll.addEventListener('change', function () {{
+                document.querySelectorAll('#tableWrap .rowcb').forEach(function (c) {{ c.checked = selAll.checked; }});
+                updateBulkCount();
+              }});
+              updateBulkCount();
             }}
 
+            function applyFilter() {{
+              const term = (document.getElementById('searchInput').value || '').trim().toLowerCase();
+              let filtered = allEntries;
+              if (term) {{
+                filtered = allEntries.filter(function (e) {{
+                  return (e.name || '').toLowerCase().indexOf(term) !== -1
+                    || fmtTime(e.at).toLowerCase().indexOf(term) !== -1;
+                }});
+              }}
+              renderTable(filtered);
+              setMgr('แสดง ' + filtered.length + ' / ' + allEntries.length + ' รายชื่อ');
+            }}
+
+            // ---------- CRUD ----------
             async function loadEntries() {{
               const code = getCode();
-              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
-              localStorage.setItem(storageKey, code);
+              if (!code) {{ logout(); return; }}
               setMgr('กำลังโหลด...');
               try {{
                 const res = await fetch('/api/admin/entries?code=' + encodeURIComponent(code));
-                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'โหลดไม่สำเร็จ'); return; }}
-                const data = await res.json();
-                renderTable(data);
-                setMgr('ทั้งหมด ' + data.length + ' รายชื่อ');
+                if (!res.ok) {{ if (res.status === 401) {{ logout(); }} else setMgr('โหลดไม่สำเร็จ'); return; }}
+                allEntries = await res.json();
+                applyFilter();
               }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
             }}
 
             async function addEntry() {{
               const code = getCode();
-              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
               const name = document.getElementById('newName').value.trim();
               const idx = parseInt(document.getElementById('newPhrase').value, 10);
               if (!name) {{ setMgr('กรุณาใส่ชื่อ'); return; }}
@@ -767,16 +819,14 @@ def admin_page() -> str:
                   headers: {{ 'Content-Type': 'application/json' }},
                   body: JSON.stringify({{ name: name, phrase_index: idx }})
                 }});
-                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'เพิ่มไม่สำเร็จ'); return; }}
+                if (!res.ok) {{ if (res.status === 401) {{ logout(); }} else setMgr('เพิ่มไม่สำเร็จ'); return; }}
                 document.getElementById('newName').value = '';
-                setMgr('เพิ่มแล้ว');
                 loadEntries();
               }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
             }}
 
             async function saveEntry(id, name, phraseIdx, btn) {{
               const code = getCode();
-              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
               name = (name || '').trim();
               if (!name) {{ setMgr('ชื่อห้ามว่าง'); return; }}
               btn.disabled = true;
@@ -786,27 +836,67 @@ def admin_page() -> str:
                   headers: {{ 'Content-Type': 'application/json' }},
                   body: JSON.stringify({{ name: name, phrase_index: parseInt(phraseIdx, 10) }})
                 }});
-                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'บันทึกไม่สำเร็จ'); return; }}
+                if (!res.ok) {{ if (res.status === 401) {{ logout(); }} else setMgr('บันทึกไม่สำเร็จ'); return; }}
                 setMgr('บันทึกรายการ #' + id + ' แล้ว');
               }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
               finally {{ btn.disabled = false; }}
             }}
 
-            async function deleteEntry(id, name, tr) {{
+            async function deleteEntry(id, name) {{
               if (!confirm('ลบรายการของ "' + name + '" ?')) return;
               const code = getCode();
-              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
               try {{
                 const res = await fetch('/api/admin/signatures/' + id + '?code=' + encodeURIComponent(code), {{ method: 'DELETE' }});
-                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'ลบไม่สำเร็จ'); return; }}
-                tr.remove();
+                if (!res.ok) {{ if (res.status === 401) {{ logout(); }} else setMgr('ลบไม่สำเร็จ'); return; }}
                 setMgr('ลบรายการ #' + id + ' แล้ว');
+                loadEntries();
               }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
             }}
 
+            async function bulkDelete() {{
+              const boxes = Array.prototype.slice.call(document.querySelectorAll('#tableWrap .rowcb:checked'));
+              const ids = boxes.map(function (b) {{ return parseInt(b.getAttribute('data-id'), 10); }});
+              if (!ids.length) {{ setMgr('ยังไม่ได้เลือกรายการ'); return; }}
+              if (!confirm('ลบ ' + ids.length + ' รายการที่เลือก?')) return;
+              const code = getCode();
+              try {{
+                const res = await fetch('/api/admin/signatures/bulk-delete?code=' + encodeURIComponent(code), {{
+                  method: 'POST',
+                  headers: {{ 'Content-Type': 'application/json' }},
+                  body: JSON.stringify({{ ids: ids }})
+                }});
+                if (!res.ok) {{ if (res.status === 401) {{ logout(); }} else setMgr('ลบไม่สำเร็จ'); return; }}
+                const d = await res.json().catch(function () {{ return {{}}; }});
+                setMgr('ลบแล้ว ' + (d.deleted != null ? d.deleted : ids.length) + ' รายการ');
+                loadEntries();
+              }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
+            }}
+
+            // ---------- init ----------
             document.getElementById('newPhrase').innerHTML = phraseOptionsHtml(0);
+            document.getElementById('loginBtn').addEventListener('click', function () {{ doLogin(false); }});
+            document.getElementById('loginCode').addEventListener('keydown', function (ev) {{ if (ev.key === 'Enter') doLogin(false); }});
+            document.getElementById('logoutBtn').addEventListener('click', logout);
+            document.getElementById('downloadCsv').addEventListener('click', function () {{ download('/api/admin/export.csv', '{EXPORT_BASENAME}.csv'); }});
+            document.getElementById('downloadXlsx').addEventListener('click', function () {{ download('/api/admin/export.xlsx', '{EXPORT_BASENAME}.xlsx'); }});
+            document.getElementById('loadSummary').addEventListener('click', async function () {{
+              const code = getCode();
+              statusEl.textContent = 'กำลังโหลดสรุป...';
+              try {{
+                const res = await fetch('/api/admin/summary?code=' + encodeURIComponent(code));
+                const data = await res.json().catch(function () {{ return {{}}; }});
+                if (!res.ok) {{ if (res.status === 401) {{ statusEl.textContent = 'รหัสผ่านไม่ถูกต้อง'; logout(); }} else statusEl.textContent = 'โหลดสรุปไม่สำเร็จ'; return; }}
+                statusEl.textContent = JSON.stringify(data, null, 2);
+              }} catch (e) {{ statusEl.textContent = 'เกิดข้อผิดพลาด'; }}
+            }});
             document.getElementById('loadEntries').addEventListener('click', loadEntries);
             document.getElementById('addBtn').addEventListener('click', addEntry);
+            document.getElementById('searchInput').addEventListener('input', applyFilter);
+            document.getElementById('bulkDeleteBtn').addEventListener('click', bulkDelete);
+
+            // auto-login ถ้าเคยจำรหัสไว้
+            const stored = localStorage.getItem(storageKey) || '';
+            if (stored) {{ document.getElementById('loginCode').value = stored; doLogin(true); }}
           </script>
         </body>
         </html>
