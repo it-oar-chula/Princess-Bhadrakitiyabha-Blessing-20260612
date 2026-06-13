@@ -24,6 +24,26 @@
 
   /* ลายไทยดอกแปดกลีบ เรียงแบบสลับฟันปลา (half-drop) จางมาก */
   --thai-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cdefs%3E%3Cg id='s' fill='none' stroke='%23ffffff' stroke-opacity='0.1' stroke-width='0.9'%3E%3Cpath d='M15 0 L5.5 2.3 L10.6 10.6 L2.3 5.5 L0 15 L-2.3 5.5 L-10.6 10.6 L-5.5 2.3 L-15 0 L-5.5 -2.3 L-10.6 -10.6 L-2.3 -5.5 L0 -15 L2.3 -5.5 L10.6 -10.6 L5.5 -2.3 Z'/%3E%3Ccircle r='1.8'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23s' x='20' y='20'/%3E%3Cuse href='%23s' x='60' y='60'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='0.9'%3E%3Cpath d='M60 16 L64 20 L60 24 L56 20 Z'/%3E%3Cpath d='M20 56 L24 60 L20 64 L16 60 Z'/%3E%3C/g%3E%3C/svg%3E");
+  --thai-pattern-size: 80px 80px;
+  --thai-pattern-fade-x: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 0, 0, 0.6) 8%,
+    #000 18%,
+    #000 82%,
+    rgba(0, 0, 0, 0.6) 92%,
+    transparent 100%
+  );
+  --left-column-glow: radial-gradient(
+    82% 54% at 50% -6%,
+    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.16) 18%,
+    rgba(255, 255, 255, 0.1) 34%,
+    rgba(255, 255, 255, 0.055) 50%,
+    rgba(255, 255, 255, 0.022) 66%,
+    rgba(255, 255, 255, 0.008) 78%,
+    transparent 90%
+  );
 }
 
 * {
@@ -69,11 +89,13 @@ body.modal-open {
    ============================================================ */
 
 .memorial-shell {
+  --shell-gap: clamp(32px, 4vw, 72px);
+  --left-column-ratio: 0.3739;
   width: min(1400px, calc(100% - 56px));
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.34fr);
-  gap: clamp(32px, 4vw, 72px);
+  gap: var(--shell-gap);
   padding: 48px 0;
 }
 
@@ -93,19 +115,30 @@ body.modal-open {
   text-align: center;
 }
 
-/* ลายไทยพื้นหลัง + ไล่แสงแคบ เฉพาะคอลัมน์ซ้าย โฟกัสรอบพระฉายาลักษณ์ */
+/* ชั้นแสงรอบพระฉายาลักษณ์ */
 .tribute-panel::before {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
-  /* ลายไทยเต็มคอลัมน์ซ้ายแบบเรียบ + แสงไล่นุ่มๆ รอบพระฉายาลักษณ์ (ไม่ใช้ mask เพื่อไม่ให้เกิดขอบซ้อน) */
-  background:
-    radial-gradient(55% 45% at 50% 34%, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.1) 50%, transparent 80%),
-    var(--thai-pattern);
-  background-size: cover, 80px 80px;
-  background-position: center, center;
-  background-repeat: no-repeat, repeat;
+  background: var(--left-column-glow);
+  background-size: cover;
+  background-position: center top;
+  pointer-events: none;
+}
+
+/* ชั้นลายไทยล้วน ๆ แล้วค่อยไล่หายที่ขอบซ้าย/ขวา */
+.tribute-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-image: var(--thai-pattern);
+  background-size: var(--thai-pattern-size);
+  background-position: center;
+  background-repeat: repeat;
+  -webkit-mask-image: var(--thai-pattern-fade-x);
+  mask-image: var(--thai-pattern-fade-x);
   pointer-events: none;
 }
 
@@ -198,10 +231,13 @@ body.modal-open {
   font-weight: 500;
   line-height: 1.6;
   text-wrap: balance;
+  word-break: keep-all;
+  overflow-wrap: normal;
 }
 
 .royal-name span {
-  display: inline;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .masthead-sub {
@@ -421,15 +457,53 @@ body.modal-open {
   }
 
   .memorial-shell {
+    position: relative;
+    isolation: isolate;
     height: 100vh;
     padding: 0;
     align-items: stretch;
+  }
+
+  .memorial-shell::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc((100% - var(--shell-gap)) * var(--left-column-ratio) + var(--shell-gap));
+    z-index: -1;
+    background: var(--left-column-glow);
+    background-size: cover;
+    background-position: center top;
+    background-repeat: no-repeat;
+    pointer-events: none;
+  }
+
+  .memorial-shell::after {
+    content: "";
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: calc((100% - var(--shell-gap)) * var(--left-column-ratio) + var(--shell-gap));
+    z-index: -1;
+    background-image: var(--thai-pattern);
+    background-size: var(--thai-pattern-size);
+    background-position: center;
+    background-repeat: repeat;
+    -webkit-mask-image: var(--thai-pattern-fade-x);
+    mask-image: var(--thai-pattern-fade-x);
+    pointer-events: none;
   }
 
   .tribute-panel {
     justify-content: center;
     padding: 32px 0;
     overflow-y: auto;
+  }
+
+  .tribute-panel::before {
+    content: none;
+  }
+
+  .tribute-panel::after {
+    content: none;
   }
 
   .book-panel {
@@ -752,8 +826,9 @@ body.modal-open {
     padding-top: 40px;
   }
 
-  .royal-name span {
-    display: block;
+  .royal-name {
+    font-size: clamp(1rem, 4.6vw, 1.22rem);
+    line-height: 1.7;
   }
 
   .phrase-list {
