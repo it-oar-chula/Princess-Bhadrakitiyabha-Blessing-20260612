@@ -3,15 +3,19 @@ from __future__ import annotations
 import csv
 import io
 import json
+import math
 import os
 import secrets
 import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from threading import Lock
+from time import monotonic
 from textwrap import dedent
+from collections import deque
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from openpyxl import Workbook
@@ -29,7 +33,14 @@ else:
 ADMIN_CODE = os.getenv("ADMIN_CODE", "change-me")
 APP_TITLE = os.getenv("APP_TITLE", "ร่วมลงนามถวายความอาลัย")
 EXPORT_BASENAME = os.getenv("EXPORT_BASENAME", "20260612-Bhadrakitiyabha-Blessing")
+SUBMISSION_COOLDOWN_SECONDS = max(
+    0.0, float(os.getenv("SUBMISSION_COOLDOWN_SECONDS", "8"))
+)
+SUBMISSION_MAX_PER_MINUTE = max(
+    0, int(os.getenv("SUBMISSION_MAX_PER_MINUTE", "6"))
+)
 BANGKOK_TZ = timezone(timedelta(hours=7))
+RATE_LIMIT_WINDOW_SECONDS = 60.0
 
 PHRASES = [
     "เสด็จสู่แดนสรวง\nไทยทั้งปวงน้อมสำนึกในพระกรุณาธิคุณตราบนิรันดร์",
@@ -72,6 +83,9 @@ ALTER TABLE signatures_new RENAME TO signatures;
 """
 
 app = FastAPI(title=APP_TITLE)
+submission_lock = Lock()
+submission_history_by_client: dict[str, deque[float]] = {}
+last_public_submission_at = 0.0
 
 
 class SignatureCreate(BaseModel):
@@ -211,6 +225,61 @@ def require_admin(code: Optional[str]) -> None:
         raise HTTPException(status_code=401, detail="Invalid admin code")
 
 
+def get_client_key(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip() or "unknown"
+    if request.client and request.client.host:
+        return request.client.host
+    return "unknown"
+
+
+def enforce_public_submission_limit(request: Request) -> None:
+    global last_public_submission_at
+
+    if SUBMISSION_COOLDOWN_SECONDS <= 0 and SUBMISSION_MAX_PER_MINUTE <= 0:
+        return
+
+    now = monotonic()
+    client_key = get_client_key(request)
+
+    with submission_lock:
+        retry_after = 0.0
+
+        if SUBMISSION_MAX_PER_MINUTE > 0:
+            history = submission_history_by_client.setdefault(client_key, deque())
+            cutoff = now - RATE_LIMIT_WINDOW_SECONDS
+            while history and history[0] <= cutoff:
+                history.popleft()
+            if len(history) >= SUBMISSION_MAX_PER_MINUTE:
+                retry_after = max(
+                    retry_after, RATE_LIMIT_WINDOW_SECONDS - (now - history[0])
+                )
+
+        if SUBMISSION_COOLDOWN_SECONDS > 0 and last_public_submission_at > 0:
+            since_last = now - last_public_submission_at
+            if since_last < SUBMISSION_COOLDOWN_SECONDS:
+                retry_after = max(
+                    retry_after, SUBMISSION_COOLDOWN_SECONDS - since_last
+                )
+
+        if retry_after > 0:
+            wait_seconds = max(1, math.ceil(retry_after))
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "ส่งรายการถี่เกินไป "
+                    f"โปรดรอประมาณ {wait_seconds} วินาทีแล้วลองใหม่อีกครั้ง"
+                ),
+                headers={"Retry-After": str(wait_seconds)},
+            )
+
+        if SUBMISSION_MAX_PER_MINUTE > 0:
+            submission_history_by_client.setdefault(client_key, deque()).append(now)
+        if SUBMISSION_COOLDOWN_SECONDS > 0:
+            last_public_submission_at = now
+
+
 EXPORT_HEADERS = ["id", "submitted_at", "name", "phrase_index", "phrase"]
 
 
@@ -324,7 +393,9 @@ def insert_signature(name: str, phrase_index: int, phrase: str) -> dict:
 
 
 @app.post("/api/signatures")
-def create_signature(payload: SignatureCreate) -> dict:
+def create_signature(payload: SignatureCreate, request: Request) -> dict:
+    enforce_public_submission_limit(request)
+
     name = normalize_text(payload.name)
     if not name:
         raise HTTPException(status_code=400, detail="name is required")

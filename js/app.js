@@ -280,10 +280,37 @@ function render() {
     return btn;
   };
 
+  const makeGap = () => {
+    const gap = document.createElement("span");
+    gap.className = "page-gap";
+    gap.textContent = "...";
+    gap.setAttribute("aria-hidden", "true");
+    return gap;
+  };
+
+  const pageItems = [];
+  const addPage = (page) => {
+    if (page >= 1 && page <= totalPages && !pageItems.includes(page)) {
+      pageItems.push(page);
+    }
+  };
+
+  addPage(1);
+  addPage(currentPage - 1);
+  addPage(currentPage);
+  addPage(currentPage + 1);
+  addPage(totalPages);
+  pageItems.sort((a, b) => a - b);
+
   pagination.appendChild(makeBtn("ก่อนหน้า", currentPage - 1, { disabled: currentPage === 1 }));
-  for (let p = 1; p <= totalPages; p++) {
-    pagination.appendChild(makeBtn(toThaiDigits(p), p, { active: p === currentPage }));
-  }
+
+  pageItems.forEach((page, index) => {
+    if (index > 0 && page - pageItems[index - 1] > 1) {
+      pagination.appendChild(makeGap());
+    }
+    pagination.appendChild(makeBtn(toThaiDigits(page), page, { active: page === currentPage }));
+  });
+
   pagination.appendChild(makeBtn("ถัดไป", currentPage + 1, { disabled: currentPage === totalPages }));
 }
 

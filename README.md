@@ -41,7 +41,8 @@ phrase          ข้อความถ้อยคำเต็ม
 
 1. สร้างไฟล์ `.env` จาก `.env.example`
 2. ตั้งค่า `ADMIN_CODE`
-3. รัน
+3. ปรับค่ากันการกดรัวได้จาก `SUBMISSION_COOLDOWN_SECONDS` และ `SUBMISSION_MAX_PER_MINUTE` ถ้าต้องการ
+4. รัน
 
 ```bash
 docker compose up --build
@@ -70,6 +71,15 @@ GET /api/admin/export.csv?code=YOUR_CODE
 GET /api/admin/export.xlsx?code=YOUR_CODE
 GET /api/admin/summary?code=YOUR_CODE
 ```
+
+## การกันกดรัว / anti-spam แบบเบื้องต้น
+
+- `SUBMISSION_COOLDOWN_SECONDS`
+  กำหนดให้ทั้งระบบเว้นช่วงก่อนรับรายการใหม่ เช่น `8` คือรับได้ 1 รายการทุก 8 วินาที
+- `SUBMISSION_MAX_PER_MINUTE`
+  จำกัดต่อ client/IP ว่าใน 1 นาทีส่งได้สูงสุดกี่ครั้ง เช่น `6`
+
+ค่าชุดนี้เหมาะกับเครื่องลงนามเครื่องเดียว เพราะช่วยกันการกดรัวหรือยิง submit ซ้ำได้ระดับหนึ่ง
 
 ## ข้อควรรู้เรื่อง SQLite
 
