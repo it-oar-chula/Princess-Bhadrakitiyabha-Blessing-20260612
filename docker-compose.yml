@@ -10,5 +10,8 @@ services:
       DB_PATH: ${DB_PATH:-/app/data/signatures.db}
       EXPORT_BASENAME: ${EXPORT_BASENAME:-20260612-Bhadrakitiyabha-Blessing}
     volumes:
-      - ./data:/app/data
+      - blessing-data:/app/data
     restart: unless-stopped
+
+volumes:
+  blessing-data:

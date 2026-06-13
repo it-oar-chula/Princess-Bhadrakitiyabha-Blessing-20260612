@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import os
 import secrets
 import sqlite3
@@ -77,6 +78,11 @@ class SignatureCreate(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     phrase_index: Optional[int] = Field(default=None, ge=0, le=len(PHRASES) - 1)
     phrase: Optional[str] = Field(default=None, max_length=300)
+
+
+class SignatureUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=120)
+    phrase_index: Optional[int] = Field(default=None, ge=0, le=len(PHRASES) - 1)
 
 
 def now_bangkok() -> datetime:
@@ -286,13 +292,7 @@ def list_signatures() -> list[dict]:
     return fetch_entries(order="DESC")
 
 
-@app.post("/api/signatures")
-def create_signature(payload: SignatureCreate) -> dict:
-    name = normalize_text(payload.name)
-    if not name:
-        raise HTTPException(status_code=400, detail="name is required")
-
-    phrase_index, phrase = resolve_phrase(payload)
+def insert_signature(name: str, phrase_index: int, phrase: str) -> dict:
     created_at = now_bangkok()
     created_at_ms = int(created_at.timestamp() * 1000)
     submitted_at = created_at.isoformat(timespec="seconds")
@@ -309,7 +309,7 @@ def create_signature(payload: SignatureCreate) -> dict:
         new_id = cursor.lastrowid
         conn.commit()
 
-    entry = {
+    return {
         "id": new_id,
         "at": created_at_ms,
         "submitted_at": submitted_at,
@@ -318,7 +318,15 @@ def create_signature(payload: SignatureCreate) -> dict:
         "phrase": phrase,
     }
 
-    return {"ok": True, "entry": entry}
+
+@app.post("/api/signatures")
+def create_signature(payload: SignatureCreate) -> dict:
+    name = normalize_text(payload.name)
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+
+    phrase_index, phrase = resolve_phrase(payload)
+    return {"ok": True, "entry": insert_signature(name, phrase_index, phrase)}
 
 
 @app.get("/api/admin/summary")
@@ -355,8 +363,71 @@ def admin_export_xlsx(code: str = Query(default="")) -> Response:
     )
 
 
+@app.get("/api/admin/entries")
+def admin_entries(code: str = Query(default="")) -> list[dict]:
+    require_admin(code)
+    return fetch_entries(order="ASC")
+
+
+@app.post("/api/admin/signatures")
+def admin_add_signature(payload: SignatureCreate, code: str = Query(default="")) -> dict:
+    require_admin(code)
+    name = normalize_text(payload.name)
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    phrase_index, phrase = resolve_phrase(payload)
+    return {"ok": True, "entry": insert_signature(name, phrase_index, phrase)}
+
+
+@app.patch("/api/admin/signatures/{entry_id}")
+def admin_update_signature(
+    entry_id: int, payload: SignatureUpdate, code: str = Query(default="")
+) -> dict:
+    require_admin(code)
+
+    fields: list[str] = []
+    params: list[object] = []
+    if payload.name is not None:
+        name = normalize_text(payload.name)
+        if not name:
+            raise HTTPException(status_code=400, detail="name cannot be empty")
+        fields.append("name = ?")
+        params.append(name)
+    if payload.phrase_index is not None:
+        fields.append("phrase_index = ?")
+        params.append(payload.phrase_index)
+        fields.append("phrase = ?")
+        params.append(PHRASES[payload.phrase_index])
+
+    if not fields:
+        raise HTTPException(status_code=400, detail="nothing to update")
+
+    params.append(entry_id)
+    with get_connection() as conn:
+        cursor = conn.execute(
+            f"UPDATE signatures SET {', '.join(fields)} WHERE id = ?", params
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="entry not found")
+
+    return {"ok": True}
+
+
+@app.delete("/api/admin/signatures/{entry_id}")
+def admin_delete_signature(entry_id: int, code: str = Query(default="")) -> dict:
+    require_admin(code)
+    with get_connection() as conn:
+        cursor = conn.execute("DELETE FROM signatures WHERE id = ?", (entry_id,))
+        conn.commit()
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=404, detail="entry not found")
+    return {"ok": True}
+
+
 @app.get("/admin", response_class=HTMLResponse)
 def admin_page() -> str:
+    phrases_json = json.dumps([p.replace("\n", " ") for p in PHRASES], ensure_ascii=False)
     html = dedent(
         f"""
         <!doctype html>
@@ -451,6 +522,44 @@ def admin_page() -> str:
               margin-top: 12px;
               color: var(--muted);
             }}
+            h2 {{ margin: 0 0 6px; font-size: 1.2rem; font-weight: 600; }}
+            select {{
+              padding: 10px 12px;
+              border: 1px solid var(--line);
+              background: #09090a;
+              color: var(--ink);
+              border-radius: 6px;
+              font: inherit;
+              max-width: 100%;
+            }}
+            .addbox {{
+              display: grid;
+              grid-template-columns: 1fr 1.3fr auto;
+              gap: 10px;
+              margin-top: 14px;
+            }}
+            .addbox > * {{ min-width: 0; }}
+            .addbox input, .addbox select {{ width: 100%; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.92rem; table-layout: fixed; }}
+            th, td {{ padding: 8px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }}
+            th {{ color: var(--accent); font-weight: 600; }}
+            th:nth-child(1), td:nth-child(1) {{ width: 38px; }}
+            th:nth-child(2), td:nth-child(2) {{ width: 30%; }}
+            th:nth-child(4), td:nth-child(4) {{ width: 110px; white-space: nowrap; color: var(--muted); font-size: 0.82rem; }}
+            th:nth-child(5), td:nth-child(5) {{ width: 150px; }}
+            td input.cell-name {{ width: 100%; padding: 8px 10px; }}
+            td select {{ width: 100%; }}
+            td.actions {{ white-space: nowrap; }}
+            td.actions button {{ padding: 7px 12px; font-size: 0.85rem; }}
+            button.danger {{ background: #7c2d2d; border-color: #7c2d2d; color: #fbeaea; }}
+            .muted-id {{ color: var(--muted); }}
+            @media (max-width: 640px) {{
+              .addbox {{ grid-template-columns: 1fr; }}
+              table, thead, tbody, th, td, tr {{ display: block; }}
+              th {{ display: none; }}
+              td {{ width: auto !important; border: 0; padding: 4px 0; }}
+              tr {{ border-bottom: 1px solid var(--line); padding: 10px 0; }}
+            }}
           </style>
         </head>
         <body>
@@ -470,6 +579,24 @@ def admin_page() -> str:
 
               <pre id="status">พร้อมใช้งาน</pre>
               <small>หน้านี้ไม่ถูกลิงก์จากหน้าแรกของเว็บ</small>
+            </section>
+
+            <section class="panel">
+              <h2>จัดการรายชื่อ (เพิ่ม / แก้ไข / ลบ)</h2>
+              <p>ใส่ Admin code ด้านบนก่อน แล้วกด "โหลดรายชื่อทั้งหมด"</p>
+
+              <div class="addbox">
+                <input id="newName" type="text" maxlength="120" placeholder="ชื่อผู้ลงนาม">
+                <select id="newPhrase"></select>
+                <button type="button" id="addBtn">+ เพิ่มรายชื่อ</button>
+              </div>
+
+              <div class="row">
+                <button type="button" class="secondary" id="loadEntries">โหลดรายชื่อทั้งหมด</button>
+                <span id="mgrStatus" style="align-self:center; color:var(--muted);"></span>
+              </div>
+
+              <div id="tableWrap"></div>
             </section>
           </main>
 
@@ -544,6 +671,142 @@ def admin_page() -> str:
                 statusEl.textContent = error.message || 'เกิดข้อผิดพลาด';
               }}
             }});
+
+            // ===== จัดการรายชื่อ (เพิ่ม / แก้ไข / ลบ) =====
+            const PHRASES = {phrases_json};
+
+            function setMgr(m) {{ document.getElementById('mgrStatus').textContent = m; }}
+
+            function fmtTime(ms) {{
+              try {{ return new Date(ms).toLocaleString('th-TH'); }} catch (e) {{ return ''; }}
+            }}
+
+            function phraseOptionsHtml(selected) {{
+              return PHRASES.map(function (p, i) {{
+                return '<option value="' + i + '"' + (i === selected ? ' selected' : '') + '>' + (i + 1) + '. ' + p + '</option>';
+              }}).join('');
+            }}
+
+            function renderTable(entries) {{
+              const wrap = document.getElementById('tableWrap');
+              wrap.innerHTML = '';
+              if (!entries.length) {{ wrap.innerHTML = '<p>ยังไม่มีรายชื่อ</p>'; return; }}
+              const table = document.createElement('table');
+              table.innerHTML = '<thead><tr><th>#</th><th>ชื่อ</th><th>ถ้อยคำ</th><th>เวลา</th><th></th></tr></thead>';
+              const tbody = document.createElement('tbody');
+              entries.forEach(function (e) {{
+                const tr = document.createElement('tr');
+
+                const tdId = document.createElement('td');
+                tdId.className = 'muted-id';
+                tdId.textContent = e.id;
+                tr.appendChild(tdId);
+
+                const tdName = document.createElement('td');
+                const nameInput = document.createElement('input');
+                nameInput.className = 'cell-name';
+                nameInput.maxLength = 120;
+                nameInput.value = e.name;
+                tdName.appendChild(nameInput);
+                tr.appendChild(tdName);
+
+                const tdPhrase = document.createElement('td');
+                const sel = document.createElement('select');
+                sel.innerHTML = phraseOptionsHtml(e.phrase_index);
+                tdPhrase.appendChild(sel);
+                tr.appendChild(tdPhrase);
+
+                const tdTime = document.createElement('td');
+                tdTime.textContent = fmtTime(e.at);
+                tr.appendChild(tdTime);
+
+                const tdAct = document.createElement('td');
+                tdAct.className = 'actions';
+                const saveBtn = document.createElement('button');
+                saveBtn.textContent = 'บันทึก';
+                saveBtn.addEventListener('click', function () {{ saveEntry(e.id, nameInput.value, sel.value, saveBtn); }});
+                const delBtn = document.createElement('button');
+                delBtn.className = 'danger';
+                delBtn.textContent = 'ลบ';
+                delBtn.style.marginLeft = '6px';
+                delBtn.addEventListener('click', function () {{ deleteEntry(e.id, e.name, tr); }});
+                tdAct.appendChild(saveBtn);
+                tdAct.appendChild(delBtn);
+                tr.appendChild(tdAct);
+
+                tbody.appendChild(tr);
+              }});
+              table.appendChild(tbody);
+              wrap.appendChild(table);
+            }}
+
+            async function loadEntries() {{
+              const code = getCode();
+              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
+              localStorage.setItem(storageKey, code);
+              setMgr('กำลังโหลด...');
+              try {{
+                const res = await fetch('/api/admin/entries?code=' + encodeURIComponent(code));
+                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'โหลดไม่สำเร็จ'); return; }}
+                const data = await res.json();
+                renderTable(data);
+                setMgr('ทั้งหมด ' + data.length + ' รายชื่อ');
+              }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
+            }}
+
+            async function addEntry() {{
+              const code = getCode();
+              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
+              const name = document.getElementById('newName').value.trim();
+              const idx = parseInt(document.getElementById('newPhrase').value, 10);
+              if (!name) {{ setMgr('กรุณาใส่ชื่อ'); return; }}
+              setMgr('กำลังเพิ่ม...');
+              try {{
+                const res = await fetch('/api/admin/signatures?code=' + encodeURIComponent(code), {{
+                  method: 'POST',
+                  headers: {{ 'Content-Type': 'application/json' }},
+                  body: JSON.stringify({{ name: name, phrase_index: idx }})
+                }});
+                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'เพิ่มไม่สำเร็จ'); return; }}
+                document.getElementById('newName').value = '';
+                setMgr('เพิ่มแล้ว');
+                loadEntries();
+              }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
+            }}
+
+            async function saveEntry(id, name, phraseIdx, btn) {{
+              const code = getCode();
+              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
+              name = (name || '').trim();
+              if (!name) {{ setMgr('ชื่อห้ามว่าง'); return; }}
+              btn.disabled = true;
+              try {{
+                const res = await fetch('/api/admin/signatures/' + id + '?code=' + encodeURIComponent(code), {{
+                  method: 'PATCH',
+                  headers: {{ 'Content-Type': 'application/json' }},
+                  body: JSON.stringify({{ name: name, phrase_index: parseInt(phraseIdx, 10) }})
+                }});
+                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'บันทึกไม่สำเร็จ'); return; }}
+                setMgr('บันทึกรายการ #' + id + ' แล้ว');
+              }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
+              finally {{ btn.disabled = false; }}
+            }}
+
+            async function deleteEntry(id, name, tr) {{
+              if (!confirm('ลบรายการของ "' + name + '" ?')) return;
+              const code = getCode();
+              if (!code) {{ setMgr('กรุณาใส่รหัส admin ด้านบนก่อน'); return; }}
+              try {{
+                const res = await fetch('/api/admin/signatures/' + id + '?code=' + encodeURIComponent(code), {{ method: 'DELETE' }});
+                if (!res.ok) {{ setMgr(res.status === 401 ? 'รหัสผ่านไม่ถูกต้อง' : 'ลบไม่สำเร็จ'); return; }}
+                tr.remove();
+                setMgr('ลบรายการ #' + id + ' แล้ว');
+              }} catch (e) {{ setMgr('เกิดข้อผิดพลาด'); }}
+            }}
+
+            document.getElementById('newPhrase').innerHTML = phraseOptionsHtml(0);
+            document.getElementById('loadEntries').addEventListener('click', loadEntries);
+            document.getElementById('addBtn').addEventListener('click', addEntry);
           </script>
         </body>
         </html>
