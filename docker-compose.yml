@@ -1,0 +1,14 @@
+services:
+  blessing-app:
+    build: .
+    container_name: blessing-app
+    ports:
+      - "${HOST_PORT:-8000}:8000"
+    environment:
+      APP_TITLE: ${APP_TITLE:-ร่วมลงนามถวายความอาลัย}
+      ADMIN_CODE: ${ADMIN_CODE:-change-me}
+      DB_PATH: ${DB_PATH:-/app/data/signatures.db}
+      EXPORT_BASENAME: ${EXPORT_BASENAME:-20260612-Bhadrakitiyabha-Blessing}
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

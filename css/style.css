@@ -1,577 +1,770 @@
 /* ============================================================
-   ถวายความอาลัย — โทนขาวดำ สง่า สุภาพ เรียบง่าย
-   พื้นหลังลายไทย "ประจำยาม" จาง ๆ
+   สมุดลงนามถวายความอาลัย
+   โทนสงบ ดำ–เทา เรียบ มีสมศักดิ์ศรี — สองคอลัมน์ซ้าย/ขวา
    ============================================================ */
 
 :root {
-  --bg:          #060607;
-  --bg-soft:     #101012;
-  --panel:       #131315;
-  --panel-edge:  #28282b;
-  --ink:         #f1efe9;       /* ขาวงาช้างอ่อน อ่านสบายกว่าขาวจัด */
-  --ink-dim:     #b5b0a6;
-  --ink-faint:   #807c74;
-  --line:        #343437;
-  --accent:      #cdc6b8;       /* เงินอมงาช้าง ดูขรึมสมการไว้อาลัย */
+  --bg-0: #0a0a0b;
+  --bg-1: #101012;
+  --bg-2: #0c0c0d;
+
+  --ink: #e9e7e2;
+  --ink-soft: #c2bfb8;
+  --ink-muted: #8c8983;
+  --ink-faint: #6f6c66;
+
+  --line: rgba(255, 255, 255, 0.10);
+  --line-soft: rgba(255, 255, 255, 0.055);
+
+  /* บรอนซ์เทาจางๆ ใช้น้อยมาก เป็นเส้นเน้นบางๆ เท่านั้น */
+  --accent: #9c8a6e;
+
   --serif: "Trirong", "Noto Serif Thai", serif;
-  --sans:  "Sarabun", "Noto Sans Thai", sans-serif;
-  /* ลายประจำยามก้านแย่ง — ใช้เฉพาะส่วนหัวและส่วนท้าย ย่อขนาดด้วย background-size */
-  --thai-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' viewBox='0 0 160 160'%3E%3Cdefs%3E%3Cg id='m'%3E%3Cpath d='M0 0 C-8 -7, -9 -20, 0 -30 C9 -20, 8 -7, 0 0 Z'/%3E%3Cpath d='M0 0 C-8 7, -9 20, 0 30 C9 20, 8 7, 0 0 Z'/%3E%3Cpath d='M0 0 C-7 -8, -20 -9, -30 0 C-20 9, -7 8, 0 0 Z'/%3E%3Cpath d='M0 0 C7 -8, 20 -9, 30 0 C20 9, 7 8, 0 0 Z'/%3E%3Cpath d='M0 -5 C-4.5 -10, -5 -17, 0 -24 C5 -17, 4.5 -10, 0 -5 Z'/%3E%3Cpath d='M0 5 C-4.5 10, -5 17, 0 24 C5 17, 4.5 10, 0 5 Z'/%3E%3Cpath d='M-5 0 C-10 -4.5, -17 -5, -24 0 C-17 5, -10 4.5, -5 0 Z'/%3E%3Cpath d='M5 0 C10 -4.5, 17 -5, 24 0 C17 5, 10 4.5, 5 0 Z'/%3E%3Ccircle cx='0' cy='0' r='2.6'/%3E%3Cpath d='M9 -9 C14 -16, 21 -19, 28 -20 C22 -14, 16 -10, 9 -9 Z'/%3E%3Cpath d='M9 9 C14 16, 21 19, 28 20 C22 14, 16 10, 9 9 Z'/%3E%3Cpath d='M-9 -9 C-14 -16, -21 -19, -28 -20 C-22 -14, -16 -10, -9 -9 Z'/%3E%3Cpath d='M-9 9 C-14 16, -21 19, -28 20 C-22 14, -16 10, -9 9 Z'/%3E%3C/g%3E%3C/defs%3E%3Cg stroke='%23ffffff' stroke-opacity='0.22' fill='%23ffffff' fill-opacity='0.12' stroke-width='0.8'%3E%3Cuse href='%23m' x='80' y='80'/%3E%3Cuse href='%23m' x='0' y='0'/%3E%3Cuse href='%23m' x='160' y='0'/%3E%3Cuse href='%23m' x='0' y='160'/%3E%3Cuse href='%23m' x='160' y='160'/%3E%3C/g%3E%3Cg fill='%23ffffff' fill-opacity='0.14'%3E%3Cpath d='M40 35 L44 40 L40 45 L36 40 Z'/%3E%3Cpath d='M120 35 L124 40 L120 45 L116 40 Z'/%3E%3Cpath d='M40 115 L44 120 L40 125 L36 120 Z'/%3E%3Cpath d='M120 115 L124 120 L120 125 L116 120 Z'/%3E%3C/g%3E%3C/svg%3E");
+  --sans: "Sarabun", "Noto Sans Thai", sans-serif;
+
+  /* ลายไทยดอกแปดกลีบ เรียงแบบสลับฟันปลา (half-drop) จางมาก */
+  --thai-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cdefs%3E%3Cg id='s' fill='none' stroke='%23ffffff' stroke-opacity='0.1' stroke-width='0.9'%3E%3Cpath d='M15 0 L5.5 2.3 L10.6 10.6 L2.3 5.5 L0 15 L-2.3 5.5 L-10.6 10.6 L-5.5 2.3 L-15 0 L-5.5 -2.3 L-10.6 -10.6 L-2.3 -5.5 L0 -15 L2.3 -5.5 L10.6 -10.6 L5.5 -2.3 Z'/%3E%3Ccircle r='1.8'/%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23s' x='20' y='20'/%3E%3Cuse href='%23s' x='60' y='60'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='0.07' stroke-width='0.9'%3E%3Cpath d='M60 16 L64 20 L60 24 L56 20 Z'/%3E%3Cpath d='M20 56 L24 60 L20 64 L16 60 Z'/%3E%3C/g%3E%3C/svg%3E");
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+}
 
 body {
-  font-family: var(--sans);
-  font-weight: 300;
-  background-color: #020203;
-  /* layered memorial background */
-  /* พื้นเรียบ มีเพียงแสงเรืองจาง ๆ ด้านบน (ลายไทยอยู่เฉพาะส่วนหัว/ท้าย) */
-  background-image:
-    radial-gradient(920px 620px at 50% 7%, rgba(112,112,116,0.42) 0%, rgba(54,54,58,0.34) 32%, rgba(10,10,12,0.70) 68%, rgba(0,0,0,0.96) 100%),
-    linear-gradient(90deg, rgba(0,0,0,0.88) 0%, rgba(5,5,6,0.22) 28%, rgba(255,255,255,0.035) 50%, rgba(5,5,6,0.22) 72%, rgba(0,0,0,0.88) 100%),
-    linear-gradient(180deg, #030304 0%, #171719 27%, #080809 61%, #010102 100%);
+  min-height: 100vh;
+  background:
+    radial-gradient(64% 54% at 50% 0%, rgba(255, 255, 255, 0.03), transparent 70%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 100%);
   background-attachment: fixed;
   color: var(--ink);
-  min-height: 100vh;
+  font-family: var(--sans);
+  font-weight: 300;
   line-height: 1.7;
   position: relative;
   isolation: isolate;
-  overflow-x: hidden;
 }
 
-body.modal-open { overflow: hidden; }
-
-body::before,
+/* ขอบมืดรอบจอ ให้ภาพดูสงบ รวมศูนย์ */
 body::after {
   content: "";
   position: fixed;
   inset: 0;
+  z-index: -1;
+  background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
   pointer-events: none;
-  z-index: 0;
 }
 
-body::before {
-  background-image:
-    linear-gradient(135deg, transparent 0%, transparent 47%, rgba(255,255,255,0.07) 47.6%, transparent 48.3%, transparent 100%),
-    linear-gradient(45deg, transparent 0%, transparent 47%, rgba(255,255,255,0.06) 47.6%, transparent 48.3%, transparent 100%),
-    var(--thai-pattern);
-  background-size: 118px 118px, 118px 118px, 118px 118px;
-  background-position: center top;
-  opacity: 0.2;
+body.modal-open {
+  overflow: hidden;
 }
 
-body::after {
-  background-image:
-    radial-gradient(580px 280px at 50% 0%, rgba(255,255,255,0.16) 0%, transparent 68%),
-    radial-gradient(760px 560px at 50% 38%, rgba(255,255,255,0.07) 0%, transparent 70%),
-    linear-gradient(90deg, rgba(0,0,0,0.9) 0%, transparent 22%, transparent 78%, rgba(0,0,0,0.9) 100%),
-    linear-gradient(180deg, rgba(0,0,0,0.58) 0%, transparent 26%, rgba(0,0,0,0.32) 72%, rgba(0,0,0,0.84) 100%);
+/* ============================================================
+   โครงหลัก : สองคอลัมน์ — ซ้าย (พระฉายาลักษณ์) / ขวา (สมุดลงนาม)
+   ============================================================ */
+
+.memorial-shell {
+  width: min(1400px, calc(100% - 56px));
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.34fr);
+  gap: clamp(32px, 4vw, 72px);
+  padding: 48px 0;
 }
 
-body > :not(script) {
+.tribute-panel,
+.book-panel {
+  min-width: 0;
+}
+
+/* ---------- ซ้าย : ส่วนถวายความอาลัย ---------- */
+
+.tribute-panel {
   position: relative;
-  z-index: 1;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
-/* ---------- พระฉายาลักษณ์ ---------- */
+/* ลายไทยพื้นหลัง + ไล่แสงแคบ เฉพาะคอลัมน์ซ้าย โฟกัสรอบพระฉายาลักษณ์ */
+.tribute-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  /* ลายไทยเต็มคอลัมน์ซ้ายแบบเรียบ + แสงไล่นุ่มๆ รอบพระฉายาลักษณ์ (ไม่ใช้ mask เพื่อไม่ให้เกิดขอบซ้อน) */
+  background:
+    radial-gradient(55% 45% at 50% 34%, rgba(255, 255, 255, 0.30), rgba(255, 255, 255, 0.1) 50%, transparent 80%),
+    var(--thai-pattern);
+  background-size: cover, 80px 80px;
+  background-position: center, center;
+  background-repeat: no-repeat, repeat;
+  pointer-events: none;
+}
+
+.masthead-lead {
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 1.05rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+}
+
+/* พระฉายาลักษณ์ : กรอบบาง มีแถบผ้าดำ */
 .portrait-frame {
   position: relative;
-  width: min(300px, 72vw);
-  margin: 36px auto 0;
-  padding: 12px;
-  background: #0d0d0e;
-  border: 1px solid #3b3a36;
-  box-shadow:
-    0 24px 60px rgba(0,0,0,0.55),
-    inset 0 0 0 1px rgba(255,255,255,0.045);
+  width: min(252px, 80%);
+  margin-top: 28px;
+  padding: 9px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 26px 70px rgba(0, 0, 0, 0.55);
 }
 
 .portrait-inner {
   position: relative;
   aspect-ratio: 3 / 4;
   overflow: hidden;
-  border: 1px solid #2c2c2a;
-  background: #131314;
+  background: #060607;
 }
-/* ข้อความสำรอง กรณียังไม่มีไฟล์รูป */
-.portrait-inner::after {
-  content: "พระฉายาลักษณ์";
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--serif);
-  letter-spacing: 0.3em;
-  text-indent: 0.3em;
-  color: var(--ink-faint);
-  z-index: 0;
-}
+
 .portrait-inner img {
-  position: relative;
-  z-index: 1;
   width: 100%;
   height: 100%;
-  object-fit: cover;
   display: block;
-  filter: grayscale(1) contrast(1.04) brightness(0.95); /* ขาวดำสมการไว้อาลัย */
+  object-fit: cover;
+  object-position: center top;
+  /* ขาวดำ นุ่มตา เหมาะกับงานไว้อาลัย */
+  filter: grayscale(1) brightness(0.92) contrast(1.02);
 }
 
-/* แถบริบบิ้นไว้ทุกข์ พาดมุมซ้ายบนของกรอบ */
+/* แถบผ้าดำไว้ทุกข์ พาดมุมซ้ายบน */
 .portrait-ribbon {
   position: absolute;
-  top: -6px; left: -6px;
-  width: 120px; height: 120px;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 2;
-}
-.portrait-ribbon::before {
-  content: "";
-  position: absolute;
-  top: 26px; left: -42px;
-  width: 200px; height: 30px;
+  top: 20px;
+  left: -52px;
+  width: 168px;
+  height: 24px;
+  z-index: 5;
   transform: rotate(-45deg);
-  background: linear-gradient(180deg, #29292c 0%, #0a0a0b 48%, #1c1c1f 100%);
-  border-top: 1px solid rgba(255,255,255,0.12);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  box-shadow: 0 6px 16px rgba(0,0,0,0.55);
+  background: linear-gradient(180deg, #2a2a2c 0%, #141415 55%, #0a0a0b 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.10);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.7);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
 }
 
-/* ---------- ส่วนหัว ---------- */
-.masthead {
-  text-align: center;
-  padding: 72px 24px 48px;
-  border-bottom: 1px solid var(--line);
-  /* ลายไทยขนาดเล็กถี่ (ย่อเหลือ 84px) ใต้ม่านไล่เงาบาง ๆ ให้ลายจางลงเมื่อใกล้เนื้อหา */
-  background-image:
-    radial-gradient(760px 360px at 50% 0%, rgba(255,255,255,0.11) 0%, transparent 70%),
-    linear-gradient(180deg, rgba(7,7,8,0.26) 0%, rgba(6,6,7,0.76) 100%),
-    var(--thai-pattern);
-  background-size: auto, auto, 94px 94px;
+.portrait-ribbon::before,
+.portrait-ribbon::after {
+  content: none;
 }
 
-.masthead-lead {
-  font-family: var(--serif);
-  font-size: 1.15rem;
-  letter-spacing: 0.35em;
-  text-indent: 0.35em;
-  color: var(--ink-dim);
-  overflow-wrap: anywhere;
+/* เส้นคั่น : บางจาง เทา */
+.gold-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(180px, 60%);
+  margin: 28px auto 20px;
+}
+
+.gold-divider span {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+.gold-divider i {
+  width: 4px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0.7;
 }
 
 .royal-name {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: clamp(1.4rem, 2.6vw, 2.1rem);
-  line-height: 1.8;
-  margin-top: 28px;
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 920px;
+  max-width: 520px;
   color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(1.12rem, 1.5vw, 1.5rem);
+  font-weight: 500;
+  line-height: 1.6;
   text-wrap: balance;
-  overflow-wrap: anywhere;
-  line-break: anywhere;
 }
+
 .royal-name span {
-  display: inline-block;
+  display: inline;
 }
 
 .masthead-sub {
-  margin-top: 18px;
-  margin-left: auto;
-  margin-right: auto;
-  max-width: 780px;
-  font-size: 1rem;
-  color: var(--ink-faint);
-  letter-spacing: 0.06em;
-  overflow-wrap: anywhere;
-  line-break: anywhere;
+  max-width: 480px;
+  margin-top: 14px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+  line-height: 1.8;
 }
 
-/* ---------- เส้นแบ่งประดับ ---------- */
-.divider {
+.tribute-note {
+  max-width: 460px;
+  margin-top: 20px;
+  color: var(--ink-soft);
+  font-family: var(--serif);
+  font-size: 0.96rem;
+  line-height: 1.8;
+}
+
+/* ============================================================
+   ขวา : สมุดลงนาม
+   ============================================================ */
+
+.book-panel {
+  position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 26px auto 0;
-  max-width: 560px;
+  padding-left: clamp(28px, 3vw, 56px);
+  border-left: 1px solid var(--line-soft);
 }
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--line) 30%, var(--line) 70%, transparent);
-}
-.divider-orn { width: 72px; height: 22px; flex: none; }
 
-/* ---------- โครงหน้า ---------- */
-.container {
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 48px 24px 140px;   /* เผื่อที่ให้ปุ่มลงนามลอยด้านล่าง */
+.book-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.book-kicker {
+  color: var(--ink-muted);
+  font-family: var(--serif);
+  font-size: 0.92rem;
+  letter-spacing: 0.16em;
 }
 
 .panel-title {
+  margin-top: 6px;
+  color: var(--ink);
   font-family: var(--serif);
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
   font-weight: 500;
-  font-size: 1.45rem;
-  text-align: center;
-  letter-spacing: 0.04em;
+  line-height: 1.3;
+}
+
+.book-count {
+  margin-top: 10px;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+/* ปุ่มลงนาม : เรียบ ghost เทา กึ่งกลาง ไม่เด่น */
+.sign-open-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 22px auto 0;
+  padding: 13px 30px;
+  min-height: 50px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-family: var(--serif);
+  font-size: 1rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  transition: border-color 0.25s ease, color 0.25s ease, background 0.25s ease;
+}
+
+.sign-open-btn svg {
+  opacity: 0.7;
+}
+
+.sign-open-btn:hover {
+  border-color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.03);
   color: var(--ink);
 }
 
-.panel-hint {
-  text-align: center;
-  color: var(--ink-faint);
-  font-size: 0.95rem;
-  margin-top: 6px;
-}
-
-/* ---------- สมุดลงนาม ---------- */
-.book-panel { text-align: center; }
-
-.book-count {
-  color: var(--ink-faint);
-  font-size: 0.95rem;
-  margin-top: 8px;
-  letter-spacing: 0.05em;
-}
-
+/* รายการลงนาม : เลื่อนภายในคอลัมน์ขวา (min-height:0 = กุญแจสำคัญ ไม่ให้ทะลุจอ) */
 .entry-list {
-  list-style: none;
-  margin-top: 30px;
+  width: 100%;
+  margin-top: 28px;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  text-align: center;
+  gap: 12px;
+  list-style: none;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.entry-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.entry-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
 }
 
 .entry {
-  border: 1px solid var(--panel-edge);
-  border-top: 2px solid var(--line);
-  background: linear-gradient(180deg, rgba(25,25,27,0.88) 0%, rgba(13,13,15,0.93) 100%);
-  border-radius: 3px;
-  padding: 26px 28px 22px;
-  box-shadow:
-    0 18px 44px rgba(0,0,0,0.34),
-    inset 0 1px 0 rgba(255,255,255,0.035);
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.018);
+  padding: 18px 22px;
+  text-align: center;
+}
+
+.entry-empty {
+  min-height: 110px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-muted);
+  font-family: var(--serif);
 }
 
 .entry-phrase {
-  font-family: var(--serif);
-  font-size: 1.12rem;
-  line-height: 1.95;
-  white-space: pre-line;
   color: var(--ink);
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  font-weight: 400;
+  line-height: 1.8;
+  white-space: normal;
 }
 
 .entry-name {
-  margin-top: 14px;
+  margin-top: 12px;
+  color: var(--ink-soft);
   font-family: var(--serif);
-  font-size: 1.02rem;
-  color: var(--ink-dim);
+  font-size: 0.96rem;
 }
-.entry-name::before { content: "ข้าพระพุทธเจ้า  "; color: var(--ink-faint); }
+
+.entry-name::before {
+  content: "ข้าพระพุทธเจ้า ";
+  color: var(--ink-muted);
+}
 
 .entry-time {
   margin-top: 6px;
-  font-size: 0.82rem;
-  color: #6a6864;
-  letter-spacing: 0.05em;
+  color: var(--ink-faint);
+  font-size: 0.8rem;
 }
 
-/* รายการใหม่ค่อย ๆ ปรากฏ */
 .entry.entry-new {
-  animation: entryIn 0.9s ease both;
-  border-top-color: var(--accent);
+  animation: entryIn 0.7s ease both;
 }
+
 @keyframes entryIn {
-  from { opacity: 0; transform: translateY(-14px); }
+  from { opacity: 0; transform: translateY(-8px); }
   to   { opacity: 1; transform: none; }
 }
 
-/* ---------- แบ่งหน้า ---------- */
 .pagination {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 8px;
-  margin-top: 34px;
+  justify-content: center;
+  gap: 7px;
   flex-wrap: wrap;
+  margin-top: 22px;
 }
 
 .page-btn {
-  min-width: 38px;
-  padding: 7px 12px;
-  background: transparent;
-  border: 1px solid var(--line);
-  color: var(--ink-dim);
-  font-family: var(--sans);
-  font-size: 0.95rem;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-soft);
   border-radius: 2px;
+  background: transparent;
+  color: var(--ink-muted);
   cursor: pointer;
-  transition: border-color 0.2s, color 0.2s;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  transition: border-color 0.2s ease, color 0.2s ease;
 }
-.page-btn:hover { border-color: var(--ink-dim); color: var(--ink); }
+
+.page-btn:hover {
+  border-color: var(--ink-muted);
+  color: var(--ink);
+}
+
 .page-btn.active {
-  border-color: var(--accent);
-  color: #111;
-  background: var(--accent);
+  border-color: var(--ink-soft);
+  color: var(--ink);
   cursor: default;
 }
-.page-btn:disabled { opacity: 0.35; cursor: default; }
 
-/* ---------- ปุ่มลงนามลอยด้านล่าง ---------- */
-.sign-bar {
-  position: fixed;
-  left: 0; right: 0; bottom: 0;
-  display: flex;
-  justify-content: center;
-  padding: 18px 24px 22px;
-  background: linear-gradient(180deg, transparent 0%, rgba(8,8,9,0.92) 45%);
-  z-index: 20;
-  pointer-events: none;
+.page-btn:disabled {
+  cursor: default;
+  opacity: 0.3;
 }
 
-.sign-open-btn {
-  pointer-events: auto;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 48px;
-  background: rgba(18,18,20,0.95);
-  border: 1px solid var(--accent);
-  color: var(--ink);
-  font-family: var(--serif);
-  font-size: 1.12rem;
-  letter-spacing: 0.1em;
-  border-radius: 2px;
-  cursor: pointer;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  transition: background 0.3s, color 0.3s;
-}
-.sign-open-btn:hover { background: var(--accent); color: #111; }
+/* ============================================================
+   เดสก์ท็อป : เต็มจอ ซ้ายจัดกลาง ขวาเลื่อนในตัว
+   ============================================================ */
 
-/* ---------- หน้าต่างลงนาม (Popup) ---------- */
+@media (min-width: 900px) {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    overflow: hidden;
+  }
+
+  .memorial-shell {
+    height: 100vh;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .tribute-panel {
+    justify-content: center;
+    padding: 32px 0;
+    overflow-y: auto;
+  }
+
+  .book-panel {
+    height: 100vh;
+    padding-top: clamp(40px, 6vh, 72px);
+    padding-bottom: clamp(28px, 4vh, 48px);
+    /* แถว: หัวเรื่อง / ปุ่ม / รายการ(ยืดเต็ม เลื่อนได้) / แบ่งหน้า */
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .book-heading,
+  .sign-open-btn {
+    justify-self: center;
+  }
+
+  .pagination {
+    margin-top: 18px;
+  }
+}
+
+/* ============================================================
+   หน้าต่างลงนาม (Modal)
+   ============================================================ */
+
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(4,4,5,0.78);
-  backdrop-filter: blur(3px);
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
-  z-index: 30;
-  animation: overlayIn 0.25s ease both;
+  padding: 22px;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(6px);
+  animation: overlayIn 0.22s ease both;
 }
-/* เมื่อมี attribute hidden ต้องซ่อนจริง ๆ (ชนะ display:flex ด้านบน) */
-.modal-overlay[hidden] { display: none; }
-@keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 
 .modal {
   position: relative;
-  width: min(760px, 100%);
-  max-height: calc(100vh - 48px);
+  width: min(720px, 100%);
+  max-height: calc(100vh - 44px);
   overflow-y: auto;
-  background: var(--panel);
-  border: 1px solid var(--panel-edge);
-  border-top: 2px solid var(--accent);
-  border-radius: 4px;
-  padding: 36px clamp(20px, 4vw, 44px) 36px;
-  box-shadow: 0 24px 70px rgba(0,0,0,0.7);
-  animation: modalIn 0.3s ease both;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #141416 0%, #0d0d0e 100%);
+  padding: 34px clamp(20px, 4vw, 40px) 32px;
+  box-shadow: 0 32px 90px rgba(0, 0, 0, 0.75);
+  animation: modalIn 0.26s ease both;
+  text-align: center;
 }
+
 @keyframes modalIn {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
+}
+
+.modal .panel-title {
+  margin-top: 0;
 }
 
 .modal-close {
   position: absolute;
-  top: 10px; right: 14px;
-  background: none;
-  border: none;
-  color: var(--ink-faint);
-  font-size: 1.9rem;
-  line-height: 1;
+  top: 8px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
   cursor: pointer;
-  transition: color 0.2s;
+  font-size: 1.8rem;
+  line-height: 1;
 }
-.modal-close:hover { color: var(--ink); }
 
-/* ---------- ตัวเลือกถ้อยคำ (กระชับ ๒ คอลัมน์) ---------- */
+.modal-close:hover {
+  color: var(--ink);
+}
+
+.panel-hint {
+  margin-top: 8px;
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+}
+
 .phrase-list {
-  margin-top: 22px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 22px;
+  text-align: left;
 }
 
 .phrase-item {
   position: relative;
   display: flex;
   align-items: center;
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 10px 14px 10px 38px;
+  min-height: 62px;
+  padding: 12px 14px 12px 40px;
+  border: 1px solid var(--line-soft);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
   cursor: pointer;
-  transition: border-color 0.25s, background 0.25s;
-  background: var(--bg-soft);
+  transition: border-color 0.2s ease, background 0.2s ease;
   user-select: none;
 }
-.phrase-item:hover { border-color: var(--ink-faint); }
 
-.phrase-item input { position: absolute; opacity: 0; pointer-events: none; }
+.phrase-item:hover {
+  border-color: var(--line);
+}
+
+.phrase-item input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
 
 .phrase-item .mark {
   position: absolute;
-  left: 13px; top: 50%;
-  transform: translateY(-50%);
-  width: 14px; height: 14px;
-  border: 1px solid var(--ink-faint);
+  top: 50%;
+  left: 14px;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--ink-muted);
   border-radius: 50%;
-  transition: border-color 0.25s;
+  transform: translateY(-50%);
 }
+
 .phrase-item .mark::after {
   content: "";
   position: absolute;
   inset: 3px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--ink-soft);
   transform: scale(0);
-  transition: transform 0.2s ease;
+  transition: transform 0.18s ease;
 }
 
 .phrase-item.selected {
-  border-color: var(--accent);
-  background: #1d1d20;
+  border-color: var(--ink-muted);
+  background: rgba(255, 255, 255, 0.045);
 }
-.phrase-item.selected .mark { border-color: var(--accent); }
-.phrase-item.selected .mark::after { transform: scale(1); }
+
+.phrase-item.selected .mark {
+  border-color: var(--ink-soft);
+}
+
+.phrase-item.selected .mark::after {
+  transform: scale(1);
+}
 
 .phrase-text {
+  color: var(--ink-soft);
   font-family: var(--serif);
   font-size: 0.94rem;
   line-height: 1.55;
-  color: var(--ink);
 }
 
-/* ---------- ช่องชื่อ (เน้นให้เด่น) ---------- */
 .name-block {
-  margin-top: 26px;
-  border: 1px solid var(--accent);
-  border-radius: 3px;
-  background: #1a1a1d;
-  padding: 14px 18px 16px;
-  box-shadow: 0 0 0 1px rgba(217,214,208,0.12), inset 0 1px 8px rgba(0,0,0,0.4);
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.02);
+  text-align: left;
 }
 
 .name-label {
   display: block;
+  margin-bottom: 6px;
+  color: var(--ink-soft);
   font-family: var(--serif);
-  font-size: 1.18rem;
-  font-weight: 500;
-  color: var(--accent);
-  letter-spacing: 0.04em;
-  margin-bottom: 4px;
+  font-size: 1.04rem;
+  font-weight: 400;
 }
 
 .name-input {
   width: 100%;
-  background: transparent;
-  border: none;
-  border-bottom: 1px dashed var(--ink-faint);
+  padding: 8px 2px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
   outline: none;
+  background: transparent;
   color: var(--ink);
   font-family: var(--serif);
-  font-size: 1.2rem;
-  letter-spacing: 0.02em;
-  padding: 6px 2px 8px;
-  transition: border-color 0.25s;
+  font-size: 1.08rem;
 }
-.name-input:focus { border-bottom-color: var(--accent); border-bottom-style: solid; }
-.name-input::placeholder { color: #6b6964; font-family: var(--sans); font-size: 0.98rem; }
+
+.name-input:focus {
+  border-bottom-color: var(--ink-soft);
+}
+
+.name-input::placeholder {
+  color: var(--ink-faint);
+  font-family: var(--sans);
+  font-size: 0.94rem;
+}
 
 .form-error {
   min-height: 1.4em;
   margin-top: 12px;
-  text-align: center;
-  color: #c9a8a8;
-  font-size: 0.92rem;
+  color: #c98f8f;
+  font-size: 0.9rem;
 }
 
+/* ปุ่มยืนยันในหน้าต่าง : เรียบ เทาเข้ม กึ่งกลาง */
 .submit-btn {
-  display: block;
-  margin: 6px auto 0;
-  padding: 13px 52px;
-  background: var(--accent);
-  border: 1px solid var(--accent);
-  color: #111;
-  font-family: var(--serif);
-  font-size: 1.08rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(320px, 100%);
+  margin: 22px auto 0;
+  padding: 14px 30px;
+  min-height: 52px;
+  border: 1px solid var(--line);
   border-radius: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--ink);
   cursor: pointer;
-  transition: background 0.3s, color 0.3s;
+  font-family: var(--serif);
+  font-size: 1.02rem;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
-.submit-btn:hover { background: transparent; color: var(--ink); }
-.submit-btn:disabled { opacity: 0.45; cursor: default; }
 
-/* ---------- ส่วนท้าย ---------- */
-.site-footer {
-  border-top: 1px solid var(--line);
-  text-align: center;
-  padding: 36px 24px 110px;   /* เผื่อปุ่มลอยด้านล่าง */
-  color: var(--ink-dim);
-  font-size: 1rem;
-  background-image:
-    linear-gradient(180deg, rgba(6,6,7,0.78) 0%, rgba(4,4,5,0.28) 100%),
-    var(--thai-pattern);
-  background-size: auto, 94px 94px;
+.submit-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: var(--ink-muted);
 }
-.site-footer .divider { margin: 0 auto 24px; max-width: 360px; }
+
+.submit-btn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ============================================================
+   ส่วนท้าย : ซ่อนบนเดสก์ท็อป (สองคอลัมน์เต็มจอ) แสดงเฉพาะจอแคบ
+   ============================================================ */
+
+.site-footer {
+  display: none;
+  margin-top: 8px;
+  padding: 26px 18px 36px;
+  border-top: 1px solid var(--line-soft);
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+.site-footer .divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.site-footer .divider-line {
+  width: 60px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--line), transparent);
+}
+
+.site-footer .divider-orn {
+  width: 56px;
+  height: 16px;
+  opacity: 0.6;
+}
+
 .footer-sub {
   margin-top: 4px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   color: var(--ink-faint);
-  letter-spacing: 0.08em;
 }
 
-/* ---------- จอเล็ก ---------- */
-@media (max-width: 640px) {
-  .masthead {
-    padding-top: 56px;
-    padding-left: 16px;
-    padding-right: 16px;
-    overflow: hidden;
+/* ============================================================
+   จอแคบ : ยุบเป็นคอลัมน์เดียว เลื่อนตามปกติ
+   ============================================================ */
+
+@media (max-width: 899px) {
+  .memorial-shell {
+    grid-template-columns: 1fr;
+    width: min(640px, calc(100% - 36px));
+    gap: 0;
+    padding: 44px 0 0;
   }
-  .masthead-lead {
-    font-size: 0.95rem;
-    letter-spacing: 0.22em;
-    text-indent: 0.22em;
+
+  .book-panel {
+    margin-top: 48px;
+    padding-left: 0;
+    padding-top: 36px;
+    border-left: 0;
+    border-top: 1px solid var(--line-soft);
   }
-  .royal-name {
-    font-size: clamp(0.98rem, 4.2vw, 1.14rem);
-    line-height: 1.7;
-    text-wrap: wrap;
-    word-break: break-all;
+
+  .entry-list {
+    overflow: visible;
+    padding-right: 0;
+    max-width: 600px;
   }
+
+  .site-footer {
+    display: block;
+  }
+}
+
+@media (max-width: 560px) {
+  .memorial-shell {
+    width: calc(100% - 32px);
+    padding-top: 40px;
+  }
+
   .royal-name span {
     display: block;
   }
-  .masthead-sub {
-    font-size: 0.85rem;
-    line-height: 1.65;
-    letter-spacing: 0.02em;
-    word-break: break-all;
+
+  .phrase-list {
+    grid-template-columns: 1fr;
   }
-  .phrase-list { grid-template-columns: 1fr; }
-  .sign-open-btn { width: 100%; justify-content: center; }
+
+  .entry {
+    padding: 18px 16px;
+  }
+
+  .modal {
+    padding: 28px 18px 26px;
+  }
 }

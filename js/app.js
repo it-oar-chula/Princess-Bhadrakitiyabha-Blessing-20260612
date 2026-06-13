@@ -1,8 +1,6 @@
 /* ============================================================
    สมุดลงนามถวายความอาลัย
-   ขณะนี้เก็บข้อมูลใน localStorage (ต้นแบบ)
-   ภายหลังเปลี่ยนเฉพาะ loadEntries() / saveEntry()
-   ให้เรียก API (Vercel → SharePoint Excel) ได้ทันที
+   ข้อมูลจริงมาจาก backend บนเครื่องเดียวกัน
    ============================================================ */
 
 // ถ้อยคำมาตรฐาน ๘ แบบ ตามประกาศสำนักงานราชบัณฑิตยสภา
@@ -14,90 +12,41 @@ const PHRASES = [
   "ผองพสกนิกรน้อมสำนึกในพระกรุณาธิคุณตราบนิจนิรันดร์",
   "น้อมสำนึกในพระกรุณาธิคุณตราบนิรันดร์",
   "พระกรุณาธิคุณจารึกในใจไทยตราบนิจนิรันดร์",
-  "สถิตกลางใจปวงประชา\nด้วยสำนึกในพระกรุณาธิคุณตราบนิจนิรันดร์",
+  "สถิตกลางใจปวงประชา\nด้วยสำนึกในพระกรุณาธิคุณตราบนิรันดร์",
 ];
 
-const PAGE_SIZE = 5;
-const STORAGE_KEY = "condolence-entries-v1";
-
-// ============================================================
-// ตั้งค่าฐานข้อมูล: วาง URL ของ Google Apps Script (Web App)
-// ที่ deploy แล้วลงในบรรทัดล่างนี้ → ข้อมูลจะถูกบันทึกลง Google Sheets
-// ปล่อยว่าง ("") = โหมดทดลอง เก็บในเครื่องผู้ใช้ (localStorage)
-// วิธีตั้งค่าดูใน apps-script/README หรือไฟล์ README.md
-// ============================================================
-const API_URL = "";
-
-// ---------- ชั้นข้อมูล ----------
-
-function loadLocal() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || seedEntries();
-  } catch {
-    return seedEntries();
-  }
-}
-
-function persistEntries(entries) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-}
-
-async function loadEntries() {
-  if (API_URL) {
-    const res = await fetch(API_URL);
-    if (!res.ok) throw new Error("โหลดข้อมูลไม่สำเร็จ");
-    return await res.json(); // เซิร์ฟเวอร์เรียงใหม่→เก่าให้แล้ว
-  }
-  return loadLocal();
-}
-
-async function saveEntry(entry) {
-  if (API_URL) {
-    // ส่งแบบ text/plain เพื่อเลี่ยง CORS preflight ของ Apps Script
-    const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(entry) });
-    if (!res.ok) throw new Error("บันทึกไม่สำเร็จ");
-    return await loadEntries();
-  }
-  const entries = loadLocal();
-  entries.unshift(entry); // รายการใหม่อยู่บนสุด
-  persistEntries(entries);
-  return entries;
-}
-
-// ข้อมูลตัวอย่างเริ่มต้น เพื่อให้เห็นหน้าตาสมุดลงนาม
-function seedEntries() {
-  const base = Date.parse("2026-06-12T08:09:00+07:00");
-  const seeds = [
-    { phraseIndex: 1, name: "ผู้อำนวยการ ผู้บริหาร และบุคลากร สำนักงานวิทยทรัพยากร จุฬาลงกรณ์มหาวิทยาลัย", at: base },
-    { phraseIndex: 0, name: "คณะผู้บริหารและพนักงาน บริษัทตัวอย่าง จำกัด", at: base - 9 * 60000 },
-    { phraseIndex: 6, name: "นางสาวภักดี มีคุณธรรม", at: base - 17 * 60000 },
-    { phraseIndex: 7, name: "คณะครูและนักเรียน โรงเรียนตัวอย่างวิทยา", at: base - 26 * 60000 },
-    { phraseIndex: 3, name: "นายจงรัก รักษ์สัตย์", at: base - 41 * 60000 },
-    { phraseIndex: 5, name: "ชมรมนิสิตเก่าตัวอย่าง", at: base - 58 * 60000 },
-  ];
-  const entries = seeds.map((s) => ({
-    phrase: PHRASES[s.phraseIndex],
-    name: s.name,
-    at: s.at,
-  }));
-  persistEntries(entries);
-  return entries;
-}
-
-// ---------- เครื่องมือแสดงผล ----------
+const PAGE_SIZE = 3;
 
 const THAI_DIGITS = ["๐", "๑", "๒", "๓", "๔", "๕", "๖", "๗", "๘", "๙"];
 const THAI_MONTHS = [
-  "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-  "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
+  "มกราคม",
+  "กุมภาพันธ์",
+  "มีนาคม",
+  "เมษายน",
+  "พฤษภาคม",
+  "มิถุนายน",
+  "กรกฎาคม",
+  "สิงหาคม",
+  "กันยายน",
+  "ตุลาคม",
+  "พฤศจิกายน",
+  "ธันวาคม",
 ];
+
+const API = {
+  signatures: "/api/signatures",
+};
+
+// ---------- เครื่องมือแปลงวันที่ ----------
 
 function toThaiDigits(value) {
   return String(value).replace(/\d/g, (d) => THAI_DIGITS[+d]);
 }
 
-function formatThaiDateTime(ms) {
-  const d = new Date(ms);
+function formatThaiDateTime(value) {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "-";
+
   const day = toThaiDigits(d.getDate());
   const month = THAI_MONTHS[d.getMonth()];
   const year = toThaiDigits(d.getFullYear() + 543);
@@ -106,12 +55,41 @@ function formatThaiDateTime(ms) {
   return `${day} ${month} ${year} เวลา ${hh}.${mm} น.`;
 }
 
+async function fetchJson(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  if (options.body && !headers["Content-Type"]) {
+    headers["Content-Type"] = "application/json";
+  }
+  const res = await fetch(url, {
+    ...options,
+    headers,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.detail || data.error || "ขัดข้องในการเชื่อมต่อ");
+  }
+  return data;
+}
+
+async function loadEntries() {
+  const data = await fetchJson(API.signatures, { method: "GET" });
+  return Array.isArray(data) ? data : data.entries || [];
+}
+
+async function saveEntry(entry) {
+  const data = await fetchJson(API.signatures, {
+    method: "POST",
+    body: JSON.stringify(entry),
+  });
+  return data.entry || data;
+}
+
 // ---------- สถานะหน้า ----------
 
 let entries = [];
 let currentPage = 1;
-let selectedPhrase = null;
-let newestHighlight = false; // เน้นรายการแรกหลังลงนามใหม่
+let selectedPhraseIndex = null;
+let newestHighlight = false;
 
 // ---------- หน้าต่างลงนาม (Popup) ----------
 
@@ -119,8 +97,8 @@ const modalOverlay = document.getElementById("modalOverlay");
 const openModalBtn = document.getElementById("openModalBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
 
-let modalOpenedAt = 0;     // กันคลิกซ้ำ/ดับเบิลคลิกแล้วหน้าต่างปิดเองทันที
-let pressOnOverlay = false; // ปิดเฉพาะเมื่อกดลงและปล่อยบนฉากหลังจริง ๆ
+let modalOpenedAt = 0;
+let pressOnOverlay = false;
 
 function openModal() {
   modalOverlay.hidden = false;
@@ -148,22 +126,21 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && !modalOverlay.hidden) closeModal();
 });
 
-// ---------- สร้างรายการถ้อยคำให้เลือก ----------
+// ---------- สร้างรายการถ้อยคำ ----------
 
 const phraseList = document.getElementById("phraseList");
 
-PHRASES.forEach((phrase, i) => {
+PHRASES.forEach((phrase, index) => {
   const label = document.createElement("label");
   label.className = "phrase-item";
-  // ในตัวเลือกแสดงเป็นบรรทัดเดียวให้กระชับ (ตอนบันทึกยังคงรูปแบบขึ้นบรรทัดเดิม)
   const compact = phrase.replace(/\n/g, " ");
   label.innerHTML = `
-    <input type="radio" name="phrase" value="${i}">
+    <input type="radio" name="phrase" value="${index}">
     <span class="mark"></span>
     <span class="phrase-text">${compact}</span>
   `;
   label.addEventListener("click", () => {
-    selectedPhrase = phrase;
+    selectedPhraseIndex = index;
     document.querySelectorAll(".phrase-item").forEach((el) => el.classList.remove("selected"));
     label.classList.add("selected");
     clearError();
@@ -177,12 +154,17 @@ const nameInput = document.getElementById("nameInput");
 const submitBtn = document.getElementById("submitBtn");
 const formError = document.getElementById("formError");
 
-function showError(msg) { formError.textContent = msg; }
-function clearError() { formError.textContent = ""; }
+function showError(msg) {
+  formError.textContent = msg;
+}
+
+function clearError() {
+  formError.textContent = "";
+}
 
 async function submitEntry() {
   const name = nameInput.value.trim();
-  if (!selectedPhrase) {
+  if (selectedPhraseIndex === null) {
     showError("โปรดเลือกถ้อยคำแสดงความอาลัย");
     return;
   }
@@ -194,22 +176,28 @@ async function submitEntry() {
 
   submitBtn.disabled = true;
   try {
-    entries = await saveEntry({ phrase: selectedPhrase, name, at: Date.now() });
-  } catch {
-    showError("ขัดข้องในการบันทึก โปรดลองอีกครั้ง");
+    const saved = await saveEntry({
+      name,
+      phrase_index: selectedPhraseIndex,
+    });
+    entries = [saved, ...entries];
+    newestHighlight = true;
+  } catch (error) {
+    showError(error.message || "ขัดข้องในการบันทึก โปรดลองอีกครั้ง");
     submitBtn.disabled = false;
     return;
   }
   submitBtn.disabled = false;
 
-  // ล้างฟอร์ม ปิดหน้าต่าง กลับไปหน้าแรก และเน้นรายการใหม่
   nameInput.value = "";
-  selectedPhrase = null;
+  selectedPhraseIndex = null;
   document.querySelectorAll(".phrase-item").forEach((el) => el.classList.remove("selected"));
+  document.querySelectorAll('input[name="phrase"]').forEach((el) => {
+    el.checked = false;
+  });
   closeModal();
 
   currentPage = 1;
-  newestHighlight = true;
   render();
   document.getElementById("book-title").scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -225,36 +213,55 @@ const entryList = document.getElementById("entryList");
 const pagination = document.getElementById("pagination");
 const bookCount = document.getElementById("bookCount");
 
+function renderEmptyState() {
+  entryList.innerHTML = `
+    <li class="entry entry-empty">
+      ยังไม่มีรายนามในสมุดลงนาม
+    </li>
+  `;
+  pagination.innerHTML = "";
+}
+
 function render() {
   const totalPages = Math.max(1, Math.ceil(entries.length / PAGE_SIZE));
   currentPage = Math.min(currentPage, totalPages);
 
   bookCount.textContent = `ผู้ร่วมลงนามทั้งสิ้น ${toThaiDigits(entries.length)} รายนาม`;
 
-  // รายการของหน้าปัจจุบัน
+  if (entries.length === 0) {
+    renderEmptyState();
+    newestHighlight = false;
+    return;
+  }
+
   const start = (currentPage - 1) * PAGE_SIZE;
   const pageEntries = entries.slice(start, start + PAGE_SIZE);
 
   entryList.innerHTML = "";
-  pageEntries.forEach((entry, i) => {
+  pageEntries.forEach((entry, index) => {
     const li = document.createElement("li");
     li.className = "entry";
-    if (newestHighlight && currentPage === 1 && i === 0) li.classList.add("entry-new");
+    if (newestHighlight && currentPage === 1 && index === 0) {
+      li.classList.add("entry-new");
+    }
+
     const phraseEl = document.createElement("p");
     phraseEl.className = "entry-phrase";
-    phraseEl.textContent = entry.phrase;
+    phraseEl.textContent = (entry.phrase || "").replace(/\n/g, " ");
+
     const nameEl = document.createElement("p");
     nameEl.className = "entry-name";
-    nameEl.textContent = entry.name;
+    nameEl.textContent = entry.name || "";
+
     const timeEl = document.createElement("p");
     timeEl.className = "entry-time";
-    timeEl.textContent = formatThaiDateTime(entry.at);
+    timeEl.textContent = formatThaiDateTime(entry.at || entry.submitted_at);
+
     li.append(phraseEl, nameEl, timeEl);
     entryList.appendChild(li);
   });
   newestHighlight = false;
 
-  // ปุ่มแบ่งหน้า
   pagination.innerHTML = "";
   if (totalPages <= 1) return;
 
@@ -288,6 +295,7 @@ function render() {
     entries = await loadEntries();
   } catch {
     bookCount.textContent = "ไม่สามารถโหลดรายนามได้ โปรดลองใหม่ภายหลัง";
+    renderEmptyState();
     return;
   }
   render();
